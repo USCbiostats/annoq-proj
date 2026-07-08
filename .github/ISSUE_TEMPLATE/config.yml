@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: AnnoQ documentation
+    url: https://github.com/USCbiostats/annoq-proj/tree/main/docs
+    about: Architecture, per-repo details, pipeline runbook, and glossary.
