@@ -14,7 +14,7 @@ contracts is the key to localizing any change.
  build annotations      index into ES           serve GraphQL          browse/query UI
 
  Artifacts flowing between stages:
-   1→2  Annotated VCF/TSV  +  annoq_mapping.json  +  doc_type.pkl  +  anno_tree.json
+   1→2  Annotated VCF/TSV  +  annoq_mappings.json  +  doc_type.pkl  +  anno_tree.json
    2→3  Populated Elasticsearch indices (schema defined by the ES mappings)
    3→4  GraphQL schema + endpoint (https://api-v2.annoq.org)
 ```
@@ -26,7 +26,7 @@ the change is inherently cross-repo.
 
 | Artifact | Produced by | Consumed by | What it defines |
 |----------|-------------|-------------|-----------------|
-| `annoq_mapping.json` (ES mappings) | data-builder | database | Field names, types, and analyzers for the ES index |
+| `annoq_mappings.json` (ES mappings) | data-builder | database | Field names, types, and analyzers for the ES index |
 | `doc_type.pkl` | data-builder | database | Per-field data-type metadata used during conversion/indexing |
 | `anno_tree.json` / `api_mapping_anno_tree.json` | data-builder | api-v2 | The annotation category tree exposed to clients |
 | Elasticsearch index schema | database | api-v2 | The actual queryable fields; api-v2 generates GraphQL types from this |
@@ -40,9 +40,10 @@ the change is inherently cross-repo.
 Prepares annotation data. Three logical parts:
 
 1. **WGSA pipeline (v0.95):** runs ANNOVAR, VEP, and SnpEff over VCF files via SLURM batch
-   jobs on HPC. Config generated per input file (`config.py`, `sbatch.py`, `sbatch.temp`).
+   jobs on HPC. Config generated per input file (`wgsa_095_pipeline/work_scripts/`:
+   `config.py`, `sbatch.py`, `sbatch.temp`).
 2. **PANTHER & enhancer annotations:** a Java module adds PANTHER protein-function and
-   enhancer data; `panther_gene_extractor.py` pulls from the PANTHER API.
+   enhancer data; `tools/api_extractor/panther_gene_extractor.py` pulls from the PANTHER API.
 3. **Downstream data generation:** `annotation_tree_gen.py` emits the JSON + Elasticsearch
    mappings; `mappings_data_type_gen.py` emits pickle files for indexing.
 
@@ -55,7 +56,7 @@ Converts and indexes.
 1. **Conversion:** VCF/TSV → JSON documents, adding a unique id from
    chromosome + position + ref + alt (`scripts/run_jobs.sh`, Python converters).
 2. **Indexing:** creates/recreates ES indices with the custom mappings and bulk-loads the
-   JSON (`run_es_job.sh`, `src/reinit`, `src/index_es_json`). Multiple loading strategies
+   JSON (`scripts/run_es_job.sh`, `src/reinit.py`, `src/index_es_json.py`). Multiple loading strategies
    (parallel / streaming / standard). Kibana + Logstash configs included for ops.
 
 **Output:** a populated Elasticsearch 8.5 cluster — the source of truth queried by the API.

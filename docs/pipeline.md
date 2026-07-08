@@ -13,10 +13,10 @@ change at a given stage.
  (1) WGSA annotate (ANNOVAR + VEP + SnpEff)  ──▶ annotated VCF
      + PANTHER / enhancer (Java + PANTHER API)
      + generate mappings/tree/pickle
-   │        artifacts: annoq_mapping.json, doc_type.pkl, anno_tree.json
+   │        artifacts: annoq_mappings.json, doc_type.pkl, anno_tree.json
    ▼  [annoq-database]
  (2) convert VCF/TSV → JSON (add unique id = chrom+pos+ref+alt)
-     create ES index from annoq_mapping.json
+     create ES index from annoq_mappings.json
      bulk-load JSON into Elasticsearch 8.5
    │        artifact: populated ES indices
    ▼  [annoq-api-v2]
@@ -66,7 +66,7 @@ Start where the symptom appears and walk upstream until the value is correct:
 |-------|----------|
 | api-v2 (3) | `docker-compose up` with sample data from annoq-database; open `/docs` and the GraphQL playground |
 | site (4) | `npm install` → `ng serve` → `localhost:4205`; point env at local or prod api-v2 |
-| database (2) | Requires a reachable Elasticsearch; run `run_es_job.sh` against sample JSON |
+| database (2) | Requires a reachable Elasticsearch; run `scripts/run_es_job.sh` against sample JSON |
 | data-builder (1) | HPC/SLURM environment; heaviest to run — usually only the artifact generators are run locally |
 
 ## Environments

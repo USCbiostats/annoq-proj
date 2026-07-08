@@ -22,18 +22,19 @@ after them come the **historical API**, the **client libraries**, and **related 
 
 **Structure (key paths):**
 - `wgsa_095_pipeline/` — WGSA v0.95 pipeline integrating ANNOVAR, VEP, SnpEff
-  - `config.py` — generates per-file configurations
-  - `sbatch.py` — creates SLURM batch files
-  - `sbatch.temp` — job template
+  - `work_scripts/config.py` — generates per-file configurations
+  - `work_scripts/sbatch.py` — creates SLURM batch files
+  - `work_scripts/sbatch.temp` — job template
+  - (an older `wgsa_08/scripts/` variant of these same scripts also exists)
 - `java_wgsa_add/` — Java module adding PANTHER protein-function + enhancer annotations
 - `tools/`
-  - `panther_gene_extractor.py` — retrieves PANTHER API annotations
+  - `api_extractor/panther_gene_extractor.py` — retrieves PANTHER API annotations
   - `annotation_tree_gen.py` — generates JSON + Elasticsearch mappings
   - `mappings_data_type_gen.py` — produces pickle files for DB indexing
 - `resources/` — large annotation reference files
 
 **Inputs:** VCF files, PANTHER annotation JSON, protein FASTA, UniProt ID-mapping files.
-**Outputs:** annotated VCF results, `annoq_mapping.json`, `doc_type.pkl`, annotation tree JSON.
+**Outputs:** annotated VCF results, `annoq_mappings.json`, `doc_type.pkl`, annotation tree JSON.
 
 **Gotchas:** SLURM/HPC-bound — most scripts assume a cluster environment. Large reference
 files may not be in-repo. Mapping/tree artifacts are contracts consumed downstream — changing
@@ -51,11 +52,12 @@ field names here breaks stages 2–4.
 
 **Structure (key paths):**
 - `scripts/run_jobs.sh` — conversion workflow (VCF/TSV → JSON, adds unique id)
-- `run_es_job.sh` — indexing entry point
-- `src/reinit` — create/recreate ES indices with custom mappings
-- `src/index_es_json` — bulk-load JSON into indices (parallel / streaming / standard)
-- `data/` — `doc_type.pkl`, `annoq_mapping.json` (from stage 1)
-- `logstash/`, `kibana/config/` — ops tooling
+- `scripts/run_es_job.sh` — indexing entry point
+- `src/reinit.py` — create/recreate ES indices with custom mappings
+- `src/index_es_json.py` — bulk-load JSON into indices (parallel / streaming / standard)
+- `src/convert_to_json.py`, `src/convert_and_load.py` — conversion helpers
+- `data/` — `doc_type.pkl`, `annoq_mappings.json`, `annoq_settings.json`
+- `logstash/`, `kibana/` — ops tooling
 
 **Inputs:** annotated VCF/TSV + mapping/pickle artifacts from data-builder.
 **Outputs:** populated Elasticsearch indices (the source of truth for the API).

@@ -31,7 +31,7 @@ reverse. When docs disagree with the code, fix the docs (or file a bug if the co
 | GraphQL schema / available attributes | **annoq-api-v2** — the generated schema + `/docs` playground |
 | Pagination cap, max fields per request | annoq-api-v2 (server enforcement) |
 | Annotation tree / categories | `anno_tree.json` (built in data-builder, served by api-v2) |
-| Elasticsearch mappings / field names | `annoq_mapping.json` (data-builder → database) |
+| Elasticsearch mappings / field names | `annoq_mappings.json` (data-builder → database) |
 | Endpoint URLs | deployment config (HRC api `api-v2.annoq.org`; TOPMed api `api-v2.topmed.annoq.org`; dev `enrichment-dev.annoq.org`) |
 | Deployment URLs & datasets | deployment config / running sites (annoq.org → api-v2.annoq.org = HRC r1.1; topmed.annoq.org → api-v2.topmed.annoq.org = TOPMed Freeze 8) |
 | Stack/branch structure | the repos' branches (data-builder / api-v2 / site: `main` vs TopMed) + deployment/infra config |

@@ -59,7 +59,7 @@ Domain and technical terms used across the AnnoQ pipeline.
 
 - **Elasticsearch (ES)** — the search/index engine storing annotated variant documents
   (tested on v8.5.x); the source of truth for the API.
-- **ES mapping** — the index schema (`annoq_mapping.json`): field names, types, analyzers.
+- **ES mapping** — the index schema (`annoq_mappings.json`): field names, types, analyzers.
 - **Kibana** — visualization/ops UI for Elasticsearch.
 - **Logstash** — log/data-ingestion tooling configured in annoq-database.
 - **SLURM** — HPC batch job scheduler used by data-builder and database stages.

@@ -15,8 +15,8 @@ This playbook locates the config surface, applies the change safely, and validat
 
 | Stage | Repo | Common config |
 |------:|------|---------------|
-| 1 build | annoq-data-builder | SLURM batch settings (`sbatch.py`, `sbatch.temp`), per-file `config.py`, resource paths, PANTHER API params |
-| 2 index | annoq-database | ES connection/creds, index name & settings, `annoq_mapping.json`, `doc_type.pkl`, loading strategy, Kibana/Logstash config |
+| 1 build | annoq-data-builder | SLURM batch settings (`wgsa_095_pipeline/work_scripts/`: `sbatch.py`, `sbatch.temp`, `config.py`), resource paths, PANTHER API params |
+| 2 index | annoq-database | ES connection/creds, index name & settings, `annoq_mappings.json`, `doc_type.pkl`, loading strategy, Kibana/Logstash config |
 | 3 API | **annoq-api-v2** (current) | `docker-compose.yaml`, env (ES host/index), `data/anno_tree.json` / `api_mapping_anno_tree.json`, `requirements.txt` |
 | 4 UI | annoq-site | environment files (**target api-v2 URL**), build config, `graphql_codegen.ts` target, `metadata/` |
 

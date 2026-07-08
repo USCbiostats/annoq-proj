@@ -69,7 +69,7 @@ Work in data-flow order so each stage has what the next needs.
   mappings/tree/pickle (`annotation_tree_gen.py`, `mappings_data_type_gen.py`). Field naming
   here is the contract for everyone downstream — get it right.
 - **Stage 2 (database):** update conversion to emit the field; update the ES mapping; re-create
-  the index and bulk-load (`src/reinit`, `src/index_es_json`). Verify in Kibana/`_search`.
+  the index and bulk-load (`src/reinit.py`, `src/index_es_json.py`). Verify in Kibana/`_search`.
 - **Stage 3 (api-v2):** regenerate GraphQL types from the new ES schema
   (`scripts/class_generators/`, `datamodel-codegen`); add/adjust resolvers; update `data/`
   tree config if the annotation tree changed. Add `pytest` coverage.
