@@ -212,7 +212,16 @@ at the intended api-v2 instance** (dev vs prod `api-v2.annoq.org`) before runnin
 **Purpose:** A workflow application ("SNPWay") that queries AnnoQ and runs overrepresentation
 (functional enrichment) analysis on genetic data. **Released** and deployed at snpway.annoq.org.
 
-**Stack:** TypeScript frontend (~77%) + Python/FastAPI backend (uvicorn, ~22%).
+**Stack:** **React + Vite** frontend (TypeScript) + Python **FastAPI** backend (uvicorn). The
+frontend is built and served by the backend (single deployable) via `backend/scripts/build_frontend.sh`.
+
+**Structure (key paths):**
+- `backend/main.py` — FastAPI app entry point.
+- `backend/src/` — `annoq.py` (AnnoQ GraphQL client), `panther.py` (PantherDB overrepresentation),
+  `workflow.py`, `query.py`, `analytics.py`, `models.py`, `config.py`, `gene_extractors.py`.
+- `backend/.env.example` — configures the AnnoQ endpoints (see below).
+- `backend/scripts/build_frontend.sh` — builds the frontend into the backend.
+- `frontend/` — Vite + React app (`src/`, `package.json`, `vite.config.ts`).
 
 **What it does:**
 1. Takes a list of SNPs and queries the AnnoQ API (**api-v2**) to map SNPs → associated genes.
@@ -221,9 +230,15 @@ at the intended api-v2 instance** (dev vs prod `api-v2.annoq.org`) before runnin
 
 **Inputs:** SNP lists. **Outputs:** gene mappings + PANTHER overrepresentation results.
 
-**Gotchas:** depends on **api-v2** — API schema/limit changes can break it. The same SNPWay
-workflow is also exposed programmatically through annoq-py and AnnoQR. Local dev runs the backend
-on port 8002.
+**AnnoQ endpoints (from `backend/.env.example`):** it calls api-v2's **GraphQL + download**
+interfaces, defaulting to the **HRC / production** instance:
+- `ANNOTATION_API_V2=https://api-v2.annoq.org/graphql`
+- `ANNOTATION_DOWNLOAD_V2=https://api-v2.annoq.org/download`
+
+**Gotchas:** depends on **api-v2** — API schema/limit changes can break it, and it uses the
+`/download` endpoint (not just `/graphql`). The endpoints are env-configurable, so point it at
+the intended stack. The same SNPWay workflow is also exposed programmatically through annoq-py
+and AnnoQR. Local dev runs the backend with `uvicorn main:app --port 8002 --reload`.
 
 ---
 

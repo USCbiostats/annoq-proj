@@ -95,7 +95,7 @@ Both stacks currently serve **SNP data only (no indels)**.
 |------------|--------|------|-------|
 | [annoq-py](https://github.com/USCbiostats/annoq-py) | Released | Python client library for the AnnoQ API + SNPWay workflows | Python 3.7+ |
 | [AnnoQR](https://github.com/USCbiostats/AnnoQR) | Released | R client package for the AnnoQ API + SNPWay workflows | R 3.5+ (`httr`, `jsonlite`) |
-| [Annoq_Overrepr_Workflow](https://github.com/USCbiostats/Annoq_Overrepr_Workflow) | Released → [snpway.annoq.org](https://snpway.annoq.org) | SNPWay: SNP→gene mapping + PANTHER overrepresentation analysis; **uses api-v2** | FastAPI (Python) + TypeScript frontend |
+| [Annoq_Overrepr_Workflow](https://github.com/USCbiostats/Annoq_Overrepr_Workflow) | Released → [snpway.annoq.org](https://snpway.annoq.org) | SNPWay: SNP→gene mapping + PANTHER overrepresentation analysis; **uses api-v2** (GraphQL + download) | FastAPI (Python) + React/Vite frontend |
 | [annoq-site-v2](https://github.com/USCbiostats/annoq-site-v2) | 🚧 **Not released** (early dev) | Next-generation web UI, intended to succeed annoq-site | React + TypeScript, Vite/Vitest |
 
 Full details on every repo: [`docs/repositories.md`](docs/repositories.md).

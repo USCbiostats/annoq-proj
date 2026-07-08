@@ -26,7 +26,7 @@ This playbook locates the config surface, applies the change safely, and validat
 |----------|------|---------------|
 | Python client | annoq-py | API base URL / endpoint, request field & pagination settings |
 | R client | AnnoQR | base URL (default `enrichment-dev.annoq.org`; per-call or env override) |
-| SNPWay app | Annoq_Overrepr_Workflow | api-v2 endpoint, backend port (8002 in dev), frontend build config |
+| SNPWay app | Annoq_Overrepr_Workflow | `.env`: `ANNOTATION_API_V2` (GraphQL) + `ANNOTATION_DOWNLOAD_V2` (download); backend port (8002 in dev); frontend build |
 | Next-gen UI | annoq-site-v2 (React) | env vars for API endpoint + dataset (Vite) |
 
 > Config for the API belongs in **annoq-api-v2**, not the deprecated **annoq-api**.
