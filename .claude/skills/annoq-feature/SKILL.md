@@ -61,6 +61,9 @@ Decide which stages it touches:
   `docs/architecture.md` → Parallel deployment stacks.
 - For anything non-trivial, present the plan to the user before implementing. Note repos/branches
   that aren't checked out and will need follow-up.
+- When creating branches across repos, follow the naming/commit convention in `CLAUDE.md` →
+  **Branch & commit naming**: owning repo `issue-<num>-<desc>` / `For #<num>`; other repos
+  `<owning-repo>-<num>-<desc>` / `For #USCbiostats/<owning-repo>/issues/<num>`.
 
 ### 3. Implement upstream → downstream
 Work in data-flow order so each stage has what the next needs.

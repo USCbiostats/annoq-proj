@@ -62,6 +62,22 @@ database/ES instance. **Always establish which stack a task concerns first.**
 - This repo is currently tracked inside a larger parent git repo (the home directory), not its
   own. Don't stage/commit unless asked; confirm the intended repo first.
 
+## Branch & commit naming (applies to all repos)
+
+An issue is filed against **one** repo (its *owning repo*), but a fix often spans several. Name
+branches and commits so every repo points back to the owning issue.
+
+- **Branch name:**
+  - In the **owning repo** (where the issue lives): `issue-<num>-<short-desc>` —
+    e.g. annoq-site#78 → [`issue-78-add-hrc-mapping-info`](https://github.com/USCbiostats/annoq-site/tree/issue-78-add-hrc-mapping-info).
+  - In **every other repo** touched by the fix: prefix with the owning repo —
+    `<owning-repo>-<num>-<short-desc>` — e.g. in annoq-data-builder →
+    [`annoq-site-78-add-hrc-mapping-info`](https://github.com/USCbiostats/annoq-data-builder/tree/annoq-site-78-add-hrc-mapping-info).
+- **Commit message:**
+  - In the **owning repo**: `For #<num>` — optionally followed by a description.
+  - In **every other repo**: reference the owning repo's issue —
+    `For #USCbiostats/<owning-repo>/issues/<num>` — optionally followed by a description.
+
 ## Sibling repos (recommended sibling checkout layout)
 
 `annoq-data-builder`, `annoq-database`, `annoq-api-v2`, `annoq-site`, `annoq-py`, `AnnoQR`,

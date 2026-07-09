@@ -71,6 +71,9 @@ Use the "Tracing a value backwards" section of `docs/pipeline.md`.
   `gh repo clone USCbiostats/annoq-<stage>`.
 - **Check out the branch for the affected stack** (`main` for HRC, the TopMed branch for TOPMed).
   data-builder, api-v2, and annoq-site each have both branch lines.
+- If the fix needs a **new branch** in each repo, follow the naming/commit convention in
+  `CLAUDE.md` → **Branch & commit naming**: owning repo `issue-<num>-<desc>` / `For #<num>`;
+  other repos `<owning-repo>-<num>-<desc>` / `For #USCbiostats/<owning-repo>/issues/<num>`.
 - Read that repo's own README/CLAUDE.md and match its conventions (see `docs/repositories.md`
   for key paths and gotchas per repo).
 
