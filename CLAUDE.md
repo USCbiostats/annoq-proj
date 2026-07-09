@@ -16,6 +16,8 @@ When the task matches, invoke the skill rather than improvising:
 - `/annoq-bugfix` — fixing a bug anywhere in the pipeline.
 - `/annoq-feature` — implementing a feature (often spans repos/stacks).
 - `/annoq-config` — changing a configuration value.
+- `/annoq-data-build` — running the data-builder stage after WGSA: add functional + HRC
+  annotation columns, then generate/distribute the tree, mappings, and doc-type artifacts.
 - `/annoq-doc-sync` — **run this after any change to a shared contract** (api-v2 schema,
   endpoints, pagination/field limits, annotation tree, dataset, or repo status) to keep the
   docs across repos from drifting.
