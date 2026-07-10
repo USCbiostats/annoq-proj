@@ -55,13 +55,11 @@ annotation file first:
 2. Copy `panther_annot.json` to the path in
    `java_wgsa_add/add_panther_enhancer/src/main/resources/add_panther_enhancer.properties`
    (or edit that property to point at the file).
-3. (Pre-work) `bash tools/scripts/run_pre_work.sh ./../annoq_data` builds the interval tree,
-   enhancer map, and label-free panther data.
-4. Run the Java module to annotate the VCFs. It also emits
+3. Run the Java module to annotate the VCFs. It also emits
    `java_wgsa_add/.../diagnostics/panther_terms.json` — **copy that to**
    `annoq-site/src/@annoq.common/data/panther_terms.json` (the UI's term-label lookup).
 
-### HRC merge — add HRC mapping columns (TOPMed only)
+### Part 2.1 — add HRC mapping columns (TOPMed only)
 ```
 python3 wgsa_add/merge_hrc_topmed.py <hrc_dir> <topmed_dir> <output_dir>
 ```
