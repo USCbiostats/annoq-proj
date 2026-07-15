@@ -69,6 +69,13 @@ columns to each TOPMed row, then writes `merge_hrc_topmed_stats.json` into the o
   `.` if `ref_hg19 != ref_hg38`.
 - **`HRC_rs_dbSNP151`** — the HRC `rs_dbSNP151` id when `Mapped_in_HRC = Y`, else empty.
 
+For every `Mapped_in_HRC = Y` variant it also compares **11 Uniprot columns** (`Uniprot_acc`,
+`Uniprot_entry`, the five `Uniprot_mapped_to_*_flanking_region` / `*_Gene_ID` sets) between the HRC
+and TOPMed rows and records per-column exact-match counts + percentages in
+`merge_hrc_topmed_stats.json` under `uniprot_comparison` (denominator = `mapped_Y`). These Uniprot
+columns come from Part 2, so this is another reason the merge must run **after** Part 2 — on an
+unannotated VCF the script prints a `NOTE` that the Uniprot columns are absent.
+
 These two fields must also be added to the annotation tree (below), under **HG19 Info** (node
 `700`) — not as a separate empty category.
 
@@ -106,7 +113,22 @@ These two fields must also be added to the annotation tree (below), under **HG19
   field. Only `annotation_tree_gen`'s `--output_json` is the real `anno_tree.json`.
 - The 2 new HRC fields must land in `annoq_mappings.json` **and** `doc_type.pkl` before indexing,
   or the columns are dropped/untyped and never become queryable.
+- **`data/doc_type.pkl` and `data/annoq_mappings.json` are generated *and* version-controlled** —
+  they are **not** regenerated on the HPC/index box. After Part 3 generates them, **commit** them
+  and `git pull` on the HPC `annoq-database` checkout **before** submitting the job. The sbatch job
+  hard-fails without `doc_type.pkl`; the load step needs `annoq_mappings.json`. (`.gitignore`
+  excludes `output/`, not `data/`, so committing them is expected.)
 - HRC merge is **TOPMed-only**; don't run it on the HRC stack.
+- **Run the HRC merge AFTER Part 2 (`add_panther_enhancer` + clean), never before.** The Part-2
+  step both adds the PANTHER/GO/Reactome columns **and cleans cells** — `clean_annotations.py`'s
+  `remove_dots` rewrites a lone `"."` (raw dbNSFP missing marker) to `""`. If the HRC merge runs on
+  the raw WGSA output instead, the result is missing ~100 PANTHER/GO/Reactome columns **and** keeps
+  raw `"."` in numeric cells. `convert_to_json` skips `""` but not `"."`, so `"."` reaches a
+  numeric-mapped field (e.g. `splicing_consensus_ada_score:float`) and Elasticsearch rejects every
+  document (`mapper_parsing_exception`, `count=0`). Symptom check: a correct TOPMed VCF has ~830
+  columns with `""` for missing; a mis-ordered one has ~724 columns with `"."`. Fix by re-running
+  the merge on the panther-annotated + cleaned VCF — do **not** work around it by patching
+  `convert_to_json`, which would hide the missing annotation columns.
 
 ## Hand-off downstream
 Producing the artifacts is stage 1. To make the new fields live:
@@ -117,8 +139,90 @@ Producing the artifacts is stage 1. To make the new fields live:
 - **annoq-site (4):** GraphQL codegen; surface the field; the tree + `panther_terms.json` drive UI.
 - Then run **`/annoq-doc-sync`** — a new field/tree is a shared contract.
 
-## Local feasibility testing (small subset)
+## Local end-to-end load test (stage 1 → stage 2), in strict order
 For a quick round-trip without full infra: take a subset VCF (e.g. the first N lines of one
-chromosome), run the steps above to produce a **small JSON**, and load it into the **local
-single-node docker ES** (`annoq-database/docker-compose-local.yml`) rather than the prod cluster.
-Add the HRC fields to `annoq_mappings.json` + `doc_type.pkl` first, or they won't appear.
+chromosome), produce a **small JSON**, and load it into the **local single-node docker ES**
+(`annoq-database/docker-compose-local.yml`) rather than the prod cluster.
+
+> ⚠️ **ORDER MATTERS — generate (and verify) the JSON *before* starting the database.**
+> **Why:** VCF→JSON conversion (step 1 below) is pure CPU/disk and needs **no** Elasticsearch.
+> Doing it first means you (a) catch empty/bad output before spending memory + disk on an ES
+> container, and (b) never bulk-load a half-written file. Bring ES up only once the JSON is
+> verified. (The two are technically independent until the load step — this order is a
+> discipline that avoids wasted infra and confusing failures.)
+
+Prerequisite: the HRC fields must already be in `annoq_mappings.json` + `doc_type.pkl`
+(see Part 3), or they won't be indexed/typed.
+
+1. **Generate the JSON** (no ES required). From `annoq-database`:
+   ```
+   bash scripts/run_jobs.sh \
+     --work_name <WORK_NAME> --base_dir <BASE_DIR> \
+     --es_index <ANNOQ_ANNOTATIONS_INDEX> --local
+   ```
+   - Input : `<BASE_DIR>/annoq-data-builder/wgsa_add/output/<WORK_NAME>/*.vcf`
+   - Output: `<BASE_DIR>/annoq-database/output/<WORK_NAME>/<vcf>/1.json`
+   - **Verify before continuing:** output exists & is non-trivial; the `_index` inside the JSON
+     equals `--es_index`; spot-check new fields (e.g. `grep -o '"Mapped_in_HRC": "[YN.]"' … | sort | uniq -c`).
+   - If the output dir already exists, `run_jobs.sh` prompts `(yes/no)` before wiping it.
+
+2. **Set the index name.** `annoq-database/.env` → `ANNOQ_ANNOTATIONS_INDEX` **must equal** the
+   `--es_index` used in step 1 (the index name is baked into every JSON bulk line).
+
+3. **Start local Elasticsearch** (single-node, low-mem) — only now:
+   `docker compose -f docker-compose-local.yml up -d` (or copy that file to `docker-compose.yml`
+   first). Wait for `curl -s localhost:9200/_cluster/health` to report green/yellow.
+
+4. **Create the index + bulk-load** the JSON. Index creation and loading are **two separate
+   module calls** — keep them separate whenever more than one file/chromosome goes into the index:
+
+   a. **Create the index — ONCE per index** (`src.reinit` deletes + recreates it empty):
+      ```
+      python3 -m src.reinit \
+        --index_name    <ANNOQ_ANNOTATIONS_INDEX> \
+        --mappings_file data/annoq_mappings.json \
+        --settings_file data/annoq_settings.json
+      ```
+      > ⚠️ **DO NOT re-run `src.reinit` once data is loaded — it DELETES all previously loaded
+      > chromosomes.** Run it exactly once, before the first load.
+
+   b. **Load data — once per chromosome/batch** (`src.index_es_json` only appends, never deletes):
+      ```
+      python3 -m src.index_es_json <annoq-database/output/<WORK_NAME>/<vcf>/>
+      ```
+      Repeat for each chromosome's JSON dir; it loads into the `.env` `ANNOQ_ANNOTATIONS_INDEX`
+      (must equal the `--index_name` used in step a). **Check doc counts in Kibana between batches**
+      (`GET <index>/_count`) to confirm each load added rows rather than replacing them.
+
+   > `scripts/run_es_job.sh` bundles both (reinit **then** load) in one shot, so it **recreates the
+   > index every run**. Use it ONLY for a fresh single-file test/rebuild — never for incremental
+   > multi-chromosome loading, or each run wipes the prior chromosomes.
+
+5. **Refresh** so docs become searchable:
+   `curl -X GET localhost:9200/<ANNOQ_ANNOTATIONS_INDEX>/_refresh`.
+
+> The prod `scripts/create-index.sh` / `scripts/refresh-es.sh` are hardcoded to `bioghost3.usc.edu`
+> and the prod index — for local testing use the localhost equivalents above; **do not** edit those
+> prod scripts to point at localhost.
+
+### Generating the JSON on HPC/CARC (instead of `--local`)
+Step 1 (VCF→JSON) is the heavy part and is normally run on CARC. **Drop `--local`** and the same
+`run_jobs.sh` renders `src/db_batch.template` per VCF and `sbatch`-submits it:
+```
+cd <BASE_DIR>/annoq-database
+bash scripts/run_jobs.sh --work_name <WORK_NAME> --base_dir <BASE_DIR> --es_index <ES_INDEX>
+```
+- Input `<BASE_DIR>/annoq-data-builder/wgsa_add/output/<WORK_NAME>/*.vcf`; output
+  `<BASE_DIR>/annoq-database/output/<WORK_NAME>/<vcf>/1.json`; slurm scripts under
+  `<BASE_DIR>/annoq-database/slurm/<WORK_NAME>/`. Monitor with `squeue -u $USER`.
+- `db_batch.template` gotchas on CARC:
+  - **SLURM account/partition** are pinned to the `pdthomas_136` / `thomas` condo. Leave as-is only
+    if you actually run on that condo; otherwise set your own (`myaccount` / `sacctmgr show assoc`).
+  - **Python module** line pins `python/3.9.12`; a plain `module purge && module load python`
+    (any modern 3.x, e.g. 3.13) works too.
+  - It activates a venv named **`venv`** (not `env`): create it once —
+    `module load python && python3 -m venv venv && . venv/bin/activate && pip3 install -r requirements.txt`.
+  - Needs `data/doc_type.pkl` present (see the version-control gotcha below).
+- Only the JSON is produced here. Loading into ES + the site/api-v2 do **not** run on this box — the
+  one annoq-site artifact this stage depends on is `metadata/annotation_tree.csv` (source of the
+  `annoq_mappings.json` / `doc_type.pkl`). Copy the JSON to the index host, then run steps 2–5 there.
