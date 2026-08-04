@@ -18,7 +18,7 @@ artifacts every downstream repo needs.
 ## Where it sits
 
 ```
-WGSA (Part 1) ──▶ [Part 2] add functional annotations ──▶ [HRC merge, TOPMed only]
+WGSA (Part 1) ──▶ [HRC merge, TOPMed only] ──▶ [Part 2] add functional annotations + clean
                                                                    │
                                           [Part 3] generate tree/mappings/pickle
                                                                    │
@@ -59,30 +59,33 @@ annotation file first:
    `java_wgsa_add/.../diagnostics/panther_terms.json` — **copy that to**
    `annoq-site/src/@annoq.common/data/panther_terms.json` (the UI's term-label lookup).
 
-### Part 2.1 — add HRC mapping columns (TOPMed only)
+### Part 2.1 — add HRC mapping columns (TOPMed only) — runs after WGSA, before Part 2
 ```
 python3 wgsa_add/merge_hrc_topmed.py <hrc_dir> <topmed_dir> <output_dir>
 ```
-Positional dirs of per-chromosome `.vcf` files; matches TOPMed↔HRC by chromosome and appends two
-columns to each TOPMed row, then writes `merge_hrc_topmed_stats.json` into the output dir:
-- **`Mapped_in_HRC`** — `Y` if the hg19-equivalent variant is in HRC r1.1, `N` if not found,
+Run **right after WGSA (Part 1), before Part 2**. `hrc_dir` is the **raw HRC r1.1 reference VCFs**
+(one per chromosome, e.g. `18.vcf` — standard 8-col `CHROM POS ID REF ALT QUAL FILTER INFO`, hg19,
+bare chromosome `18`); `topmed_dir` is the WGSA-output TOPMed `.vcf`s. **SNPs only** (indels /
+multiallelic ignored). Matches TOPMed↔HRC by chromosome and appends **four** columns per row, then
+writes `merge_hrc_topmed_stats.json` (mapping counts only):
+- **`chr_pos`** — hg38 `chr:pos`, always populated (basic info).
+- **`Mapped_in_HRC`** — `Y` if the hg19-equivalent SNP is in HRC r1.1, `N` if not found,
   `.` if `ref_hg19 != ref_hg38`.
-- **`HRC_rs_dbSNP151`** — the HRC `rs_dbSNP151` id when `Mapped_in_HRC = Y`, else empty.
+- **`HRC_chr_pos`** — hg19 `chr:pos` when `Mapped_in_HRC = Y`, else empty (HG19 info).
+- **`HRC_chr_pos_ref_alt`** — hg19 `chr:posREF>ALT` (e.g. `18:10005A>T`) when `= Y`, else empty.
 
-For every `Mapped_in_HRC = Y` variant it also compares **11 Uniprot columns** (`Uniprot_acc`,
-`Uniprot_entry`, the five `Uniprot_mapped_to_*_flanking_region` / `*_Gene_ID` sets) between the HRC
-and TOPMed rows and records per-column exact-match counts + percentages in
-`merge_hrc_topmed_stats.json` under `uniprot_comparison` (denominator = `mapped_Y`). These Uniprot
-columns come from Part 2, so this is another reason the merge must run **after** Part 2 — on an
-unannotated VCF the script prints a `NOTE` that the Uniprot columns are absent.
+The HRC rsID is **not** carried — the raw HRC ID column never provides an rsID that TOPMed's own
+`rs_dbSNP` lacks (verified on chr18), so HRC-by-RSID search uses `rs_dbSNP` + `Mapped_in_HRC=Y`. No
+Uniprot comparison is done (the merge now runs before the Part-2 functional columns exist).
 
-These two fields must also be added to the annotation tree (below), under **HG19 Info** (node
-`700`) — not as a separate empty category.
+Register these in the annotation tree (below): `chr_pos` under basic info (node `1`); the three
+HRC/HG19 fields under **HG19 Info** (node `700`).
 
 ### Part 3 — generate and distribute the metadata/mapping files
-1. Update `annoq-site/metadata/annotation_tree.csv` for any metadata changes, **including the two
-   HRC fields** (`Mapped_in_HRC`, `HRC_rs_dbSNP151` under HG19 Info). `tools/gen_col_update_info.py`
-   can help track column changes. This CSV is the **hand-maintained source of truth**.
+1. Update `annoq-site/metadata/annotation_tree.csv` for any metadata changes, **including the HRC
+   fields** (`Mapped_in_HRC`, `HRC_chr_pos`, `HRC_chr_pos_ref_alt` under HG19 Info; `chr_pos` under
+   basic info). `tools/gen_col_update_info.py` can help track column changes. This CSV is the
+   **hand-maintained source of truth**.
 2. Generate the tree + ES mappings + api-v2 mapping (Part 3.1):
    ```
    python3 -m tools.annotation_tree_gen \
@@ -111,24 +114,26 @@ These two fields must also be added to the annotation tree (below), under **HG19
 - **DO NOT** overwrite `annoq-api/data/anno_tree.json` with the `--anno_tree`
   (`/do/not/use/...`) file from `mappings_data_type_gen.py` — that script doesn't generate every
   field. Only `annotation_tree_gen`'s `--output_json` is the real `anno_tree.json`.
-- The 2 new HRC fields must land in `annoq_mappings.json` **and** `doc_type.pkl` before indexing,
-  or the columns are dropped/untyped and never become queryable.
+- The new HRC/basic fields (`chr_pos`, `Mapped_in_HRC`, `HRC_chr_pos`, `HRC_chr_pos_ref_alt`) must
+  land in `annoq_mappings.json` **and** `doc_type.pkl` before indexing, or the columns are
+  dropped/untyped and never become queryable.
 - **`data/doc_type.pkl` and `data/annoq_mappings.json` are generated *and* version-controlled** —
   they are **not** regenerated on the HPC/index box. After Part 3 generates them, **commit** them
   and `git pull` on the HPC `annoq-database` checkout **before** submitting the job. The sbatch job
   hard-fails without `doc_type.pkl`; the load step needs `annoq_mappings.json`. (`.gitignore`
   excludes `output/`, not `data/`, so committing them is expected.)
 - HRC merge is **TOPMed-only**; don't run it on the HRC stack.
-- **Run the HRC merge AFTER Part 2 (`add_panther_enhancer` + clean), never before.** The Part-2
-  step both adds the PANTHER/GO/Reactome columns **and cleans cells** — `clean_annotations.py`'s
-  `remove_dots` rewrites a lone `"."` (raw dbNSFP missing marker) to `""`. If the HRC merge runs on
-  the raw WGSA output instead, the result is missing ~100 PANTHER/GO/Reactome columns **and** keeps
-  raw `"."` in numeric cells. `convert_to_json` skips `""` but not `"."`, so `"."` reaches a
-  numeric-mapped field (e.g. `splicing_consensus_ada_score:float`) and Elasticsearch rejects every
-  document (`mapper_parsing_exception`, `count=0`). Symptom check: a correct TOPMed VCF has ~830
-  columns with `""` for missing; a mis-ordered one has ~724 columns with `"."`. Fix by re-running
-  the merge on the panther-annotated + cleaned VCF — do **not** work around it by patching
-  `convert_to_json`, which would hide the missing annotation columns.
+- **Order is WGSA → HRC merge → Part 2 (PANTHER/enhancer + clean) → convert.** The HRC merge runs
+  on the raw WGSA output (it only needs the hg19 columns); **Part 2 must still run after it and
+  before VCF→JSON conversion.** The Part-2 **Java** module (`java_wgsa_add/add_panther_enhancer`)
+  both adds the functional columns **and cleans cells** — rewriting a lone `"."` (raw dbNSFP missing
+  marker) to `""`. (The legacy Python `add_annotations.py` / `clean_annotations.py` path is superseded
+  by this Java module — see the data-builder README's "Legacy / unused code".) If conversion runs
+  on a VCF that never went through Part-2 cleaning, raw `"."` reaches a numeric-mapped field (e.g.
+  `splicing_consensus_ada_score:float`) and Elasticsearch rejects every document
+  (`mapper_parsing_exception`, `count=0`). Symptom check: a correct, cleaned TOPMed VCF has `""` for
+  missing numeric cells; an uncleaned one keeps raw `"."`. Fix by converting the Part-2-cleaned VCF —
+  do **not** patch `convert_to_json`, which would hide the issue.
 
 ## Hand-off downstream
 Producing the artifacts is stage 1. To make the new fields live:
