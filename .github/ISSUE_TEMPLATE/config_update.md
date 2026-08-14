@@ -18,7 +18,7 @@ labels: configuration
 - [ ] Stage 4 — annoq-site (environment files / target api-v2 URL, build config, codegen target)
 - [ ] Consumer — annoq-py / AnnoQR (API base URL, request settings)
 - [ ] Consumer — Annoq_Overrepr_Workflow / SNPWay (api-v2 endpoint, backend port)
-- [ ] Consumer — annoq-site-v2 (env: API endpoint + dataset)
+- [ ] Consumer — annoq-site-v2 (React; env: API endpoint + dataset — will replace annoq-site)
 
 ## File(s) and environment
 - File(s):

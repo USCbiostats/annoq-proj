@@ -28,7 +28,7 @@ This playbook plans the cross-repo work and sequences it correctly (upstream →
 | Python client | annoq-py | New programmatic query/helper for Python users |
 | R client | AnnoQR | New programmatic query/helper for R users |
 | SNPWay app | Annoq_Overrepr_Workflow | New overrepresentation/enrichment capability (snpway.annoq.org) |
-| Next-gen UI | annoq-site-v2 (React, unreleased) | UI features targeting the future frontend |
+| Next-gen UI | annoq-site-v2 (React, unreleased) | The frontend that **will replace annoq-site** — consider building UI features here as well as in annoq-site |
 
 > Target **annoq-api-v2**, not the deprecated **annoq-api**, for any API-layer feature.
 > A new client-facing query capability usually means api-v2 (3) **and** the relevant

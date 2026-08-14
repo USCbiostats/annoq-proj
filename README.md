@@ -37,10 +37,13 @@ feature**, and **updating a configuration** — across the component repositorie
               ┌─────────────┐            ┌─────────────┐            ┌────────────────────┐       ┌──────────────────┐
               │  annoq-py   │            │   AnnoQR    │            │ Annoq_Overrepr_    │       │  annoq-site-v2   │
               │ Python      │            │ R package   │            │ Workflow (SNPWay)  │       │ React (next-gen  │
-              │ client lib  │            │ client lib  │            │ snpway.annoq.org   │       │ UI, unreleased)  │
+              │ client lib  │            │ client lib  │            │ snpway.annoq.org   │       │ UI, in dev)      │
               └─────────────┘            └─────────────┘            └────────────────────┘       └──────────────────┘
                                        API consumers / clients (all query api-v2)
 ```
+
+> **Planned UI change:** **annoq-site-v2 (React) will replace annoq-site (Angular 9)** as stage 4
+> once released — see below.
 
 Data flows **left → right** through the core pipeline; a set of **consumers** query the API.
 A change to a shared contract (a field, an ES mapping, the GraphQL schema) can ripple from the
@@ -57,6 +60,11 @@ work to the right stage(s) and repo.
 | 2 | [annoq-database](https://github.com/USCbiostats/annoq-database) | Convert VCF/TSV → JSON, create indices, bulk-load Elasticsearch | Python, Bash, Elasticsearch 8.5, Kibana |
 | 3 | [annoq-api-v2](https://github.com/USCbiostats/annoq-api-v2) | **Current API** — GraphQL query layer over Elasticsearch (dynamic types) | Python 3.11, FastAPI, Strawberry, Docker |
 | 4 | [annoq-site](https://github.com/USCbiostats/annoq-site) | **Current UI** consuming the API | Angular 9, TypeScript, SCSS |
+
+> **Stage 4 is changing:** [annoq-site-v2](https://github.com/USCbiostats/annoq-site-v2) — a
+> **React + TypeScript** app (Vite/Vitest, no Angular) — **will replace annoq-site**. It is in
+> development and **not yet released**; until it ships, annoq-site (Angular 9) remains the
+> production UI and the place stage-4 work belongs.
 
 ### Parallel deployment stacks (HRC & TOPMed)
 
@@ -96,7 +104,7 @@ Both stacks currently serve **SNP data only (no indels)**.
 | [annoq-py](https://github.com/USCbiostats/annoq-py) | Released | Python client library for the AnnoQ API + SNPWay workflows | Python 3.7+ |
 | [AnnoQR](https://github.com/USCbiostats/AnnoQR) | Released | R client package for the AnnoQ API + SNPWay workflows | R 3.5+ (`httr`, `jsonlite`) |
 | [Annoq_Overrepr_Workflow](https://github.com/USCbiostats/Annoq_Overrepr_Workflow) | Released → [snpway.annoq.org](https://snpway.annoq.org) | SNPWay: SNP→gene mapping + PANTHER overrepresentation analysis; **uses api-v2** (GraphQL + download) | FastAPI (Python) + React/Vite frontend |
-| [annoq-site-v2](https://github.com/USCbiostats/annoq-site-v2) | 🚧 **Not released** (early dev) | Next-generation web UI, intended to succeed annoq-site | React + TypeScript, Vite/Vitest |
+| [annoq-site-v2](https://github.com/USCbiostats/annoq-site-v2) | 🚧 **In development — will replace [annoq-site](https://github.com/USCbiostats/annoq-site)** (not yet released) | Next-generation web UI; the designated successor to annoq-site as stage 4 | React + TypeScript, Vite/Vitest |
 
 Full details on every repo: [`docs/repositories.md`](docs/repositories.md).
 
@@ -130,11 +138,11 @@ annoq/
 ├── annoq-data-builder/         # core pipeline
 ├── annoq-database/
 ├── annoq-api-v2/
-├── annoq-site/
+├── annoq-site/                 # current UI (stage 4)
 ├── annoq-py/                   # clients / consumers
 ├── AnnoQR/
 ├── Annoq_Overrepr_Workflow/    # SNPWay
-└── annoq-site-v2/              # next-gen UI (unreleased)
+└── annoq-site-v2/              # next-gen UI — will replace annoq-site (in dev)
 ```
 
 Clone the ones you need:

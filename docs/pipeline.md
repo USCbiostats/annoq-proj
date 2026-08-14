@@ -43,6 +43,10 @@ change at a given stage.
 | Stage 3 (pagination / field limits) | Review consumers that encode those limits (annoq-py: 10k / 20 fields) |
 | Stage 4 (UI only) | Build/deploy site only |
 
+**Stage 4 is being replaced.** **annoq-site-v2** (React + TypeScript) **will replace annoq-site**
+(Angular 9) as the UI. It is not yet released, so this runbook's stage-4 steps still describe
+annoq-site; once site-v2 ships, its build/deploy replaces the Angular codegen + `ng build` steps.
+
 **api-v2 is a shared contract for more than the site.** Its consumers — `annoq-py` (Python),
 `AnnoQR` (R), and `Annoq_Overrepr_Workflow` / SNPWay (snpway.annoq.org) — all query it. A schema,
 field-name, annotation-tree, or pagination/limit change can break them too, not just annoq-site.

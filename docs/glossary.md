@@ -69,7 +69,9 @@ Domain and technical terms used across the AnnoQ pipeline.
 - **datamodel-codegen** — generates Python models from schema; used to dynamically build the
   500+ GraphQL types.
 - **graphql_codegen.ts** — generates typed GraphQL client operations for the Angular site.
-- **Angular 9** — the frontend framework for annoq-site.
+- **Angular 9** — the frontend framework for annoq-site (the current UI).
+- **React** — the frontend framework for annoq-site-v2, the UI that will replace annoq-site
+  (built with Vite, tested with Vitest); also used by the SNPWay frontend.
 - **Docker / Docker Compose** — containerization for api-v2 local/prod deployment.
 
 ## Repositories & shorthand
@@ -78,11 +80,12 @@ Core pipeline:
 - **Stage 1 / build** — annoq-data-builder
 - **Stage 2 / index** — annoq-database
 - **Stage 3 / API** — annoq-api-v2 (current API)
-- **Stage 4 / UI** — annoq-site (current UI, Angular 9)
+- **Stage 4 / UI** — annoq-site (current UI, Angular 9); to be replaced by annoq-site-v2 (React)
 
 Other repos:
 - **annoq-api** — original Flask/REST API; **deprecated**, replaced by annoq-api-v2.
 - **annoq-py** — Python client library for the API + SNPWay.
 - **AnnoQR** — R client package for the API + SNPWay.
 - **Annoq_Overrepr_Workflow** — the SNPWay app (snpway.annoq.org), uses api-v2.
-- **annoq-site-v2** — React rewrite of the UI; **not yet released**.
+- **annoq-site-v2** — React + TypeScript rewrite of the UI; **will replace annoq-site** as
+  stage 4, but is **not yet released**.

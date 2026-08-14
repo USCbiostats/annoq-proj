@@ -52,6 +52,7 @@ When one of these changes, update **all** listed locations.
 | **Annotation tree / categories** | api-v2 `data/`; annoq-proj (architecture); site UI + integrated docs |
 | **ES field names / mappings** | data-builder & database READMEs; api-v2 (generated); annoq-proj (architecture) |
 | **Repo status (deprecated / unreleased)** | annoq-proj (README, repositories, glossary); the repo's own README |
+| **Successor relationships (annoq-api → annoq-api-v2; annoq-site → annoq-site-v2)** | annoq-proj (README, architecture, repositories, glossary, CLAUDE.md, the bugfix/feature/config skills, `.github/ISSUE_TEMPLATE/*`); the predecessor repo's README/CLAUDE.md; the successor repo's README |
 | **Stack/version facts (ES 8.5, Python 3.11, Angular 9, React)** | annoq-proj (repositories, glossary); each repo's README |
 | **Deployment URLs (annoq.org, topmed.annoq.org, snpway.annoq.org)** | annoq-proj (README, architecture, pipeline, repositories); annoq-site README; SNPWay README |
 | **Dataset versions (HRC r1.1 prod, TOPMed Freeze 8 beta)** | annoq-proj (README, architecture, pipeline, repositories, glossary); annoq-site README / branch docs |
@@ -76,6 +77,7 @@ Search the hub and any checked-out sibling repos. Prefer the Grep tool; useful p
 - Attribute count: `500\+?`, `attributes`
 - Query modes / domain: `RSID`, `chromosome`, `\bgene\b`, `VCF`
 - Versions/status: `Elasticsearch 8`, `Python 3\.1`, `Angular 9`, `React`, `deprecated`, `unreleased`, `not released`
+- Successor language: `replace`, `succeed`, `successor`, `next-gen`, `rewrite`, `site-v2`
 - Deployments/datasets: `topmed\.annoq\.org`, `annoq\.org`, `HRC`, `r1\.1`, `TOPMed`, `Freeze 8`, `SNP`, `indel`
 - Stacks/branches: `stack`, `instance`, `TopMed branch`, `\bmain\b`, `parallel`
 

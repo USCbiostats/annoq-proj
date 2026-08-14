@@ -26,7 +26,7 @@ labels: enhancement
 - [ ] Consumer — annoq-py (Python client)
 - [ ] Consumer — AnnoQR (R client)
 - [ ] Consumer — Annoq_Overrepr_Workflow / SNPWay
-- [ ] Consumer — annoq-site-v2 (React, unreleased)
+- [ ] Consumer — annoq-site-v2 (React, unreleased — will replace annoq-site)
 
 ## Shared contracts touched
 <!-- Does this move a field name, ES mapping, the annotation tree, or the GraphQL schema? -->

@@ -7,7 +7,7 @@ after them come the **historical API**, the **client libraries**, and **related 
 - Core pipeline: [annoq-data-builder](#1-annoq-data-builder) → [annoq-database](#2-annoq-database) → [annoq-api-v2](#3-annoq-api-v2) → [annoq-site](#4-annoq-site)
 - Historical API: [annoq-api](#annoq-api-deprecated)
 - Clients: [annoq-py](#annoq-py), [AnnoQR](#annoqr)
-- Related apps: [Annoq_Overrepr_Workflow (SNPWay)](#annoq_overrepr_workflow--snpway), [annoq-site-v2](#annoq-site-v2)
+- Related apps: [Annoq_Overrepr_Workflow (SNPWay)](#annoq_overrepr_workflow--snpway), [annoq-site-v2](#annoq-site-v2) (React — **will replace annoq-site** as stage 4)
 
 ---
 
@@ -103,6 +103,10 @@ Local setup pairs with annoq-database sample data. Python 3.11+ required.
 
 **Purpose:** Web UI for AnnoQ — interactive annotation browsing/querying with integrated docs.
 
+> **Being replaced:** [annoq-site-v2](#annoq-site-v2) (React + TypeScript) **will replace
+> annoq-site** as stage 4. It is not yet released, so annoq-site remains the production UI and
+> the target for stage-4 work today.
+
 **Stack:** Angular 9, TypeScript (~62%), HTML, SCSS.
 
 **Structure (key paths):**
@@ -134,8 +138,9 @@ each have a `main` line and a TopMed line**.
 
 **Gotchas:** Angular 9 is dated — mind Node/CLI version compatibility. Client types are
 codegen'd from the live/target GraphQL schema; regenerate after api-v2 changes. Keep the
-target API URL (dev vs prod) correct in the environment config. A next-generation replacement,
-[annoq-site-v2](#annoq-site-v2), is in development but not yet released.
+target API URL (dev vs prod) correct in the environment config. Its replacement,
+[annoq-site-v2](#annoq-site-v2) (React), is in development but not yet released — large
+investments in the Angular codebase may be short-lived.
 
 ---
 
@@ -246,15 +251,21 @@ and AnnoQR. Local dev runs the backend with `uvicorn main:app --port 8002 --relo
 
 <https://github.com/USCbiostats/annoq-site-v2>
 
-> 🚧 **Not released** — early development. Intended to eventually succeed [annoq-site](#4-annoq-site).
+> 🚧 **In development, not yet released** — **will replace [annoq-site](#4-annoq-site)** as
+> stage 4 (the AnnoQ web UI).
 
-**Purpose:** Next-generation web UI for the AnnoQ platform.
+**Purpose:** Next-generation web UI for the AnnoQ platform — the designated replacement for
+annoq-site.
 
-**Stack:** **React** + TypeScript, built with Vite (tests via Vitest). REST/GraphQL endpoint and
-dataset are configurable via environment variables.
+**Stack:** **React** + TypeScript, built with Vite (tests via Vitest) — **no Angular**.
+REST/GraphQL endpoint and dataset are configurable via environment variables.
 
-**What it does:** A modernized rewrite of the Angular annoq-site frontend, providing a configurable
-interface to query and interact with genomic annotations.
+**What it does:** A React rewrite of the annoq-site frontend, providing a configurable
+interface to query and interact with genomic annotations. It consumes the same **api-v2** GraphQL
+contract as annoq-site, so shared api-v2 facts (endpoints, limits, annotation tree) apply here too.
 
-**Gotchas:** early stage (few commits, no releases) — treat as experimental. When it ships it will
-replace annoq-site as stage 4; until then, annoq-site (Angular 9) remains the production UI.
+**Gotchas:** early stage (few commits, no releases) — treat as experimental for now. It **will
+replace annoq-site as stage 4** when it ships; until then, annoq-site (Angular 9) remains the
+production UI. New UI work should account for both: fixes needed long-term will have to land in
+(or be re-implemented in) annoq-site-v2. Note that the parallel HRC/TOPMed stack split will need
+to be reflected here as well when it takes over stage 4.

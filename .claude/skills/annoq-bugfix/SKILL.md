@@ -28,7 +28,7 @@ the stage where it first goes wrong. Only then patch.
 | Python client | annoq-py | Python wrapper; encodes API limits (10k pagination / 20 fields) |
 | R client | AnnoQR | R wrapper; default base URL `enrichment-dev.annoq.org` |
 | SNPWay app | Annoq_Overrepr_Workflow | SNP→gene + PANTHER overrepresentation; live at snpway.annoq.org |
-| Next-gen UI | annoq-site-v2 (React, unreleased) | Experimental UI rewrite |
+| Next-gen UI | annoq-site-v2 (React, unreleased) | UI rewrite that **will replace annoq-site**; fix here too if the bug should persist after the switchover |
 
 > **annoq-api** is the deprecated original API (Flask/REST) — do not fix new issues there;
 > they belong in api-v2 unless a legacy consumer specifically requires it.

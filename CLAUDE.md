@@ -32,7 +32,9 @@ When the task matches, invoke the skill rather than improvising:
 - api-v2 GraphQL types are **generated from the ES schema** — a field must exist in the index
   before the API can expose it.
 - API **consumers** also query api-v2: `annoq-py` (Python), `AnnoQR` (R),
-  `Annoq_Overrepr_Workflow` / SNPWay (snpway.annoq.org). `annoq-site-v2` (React) is **unreleased**.
+  `Annoq_Overrepr_Workflow` / SNPWay (snpway.annoq.org).
+- `annoq-site-v2` (**React** + TypeScript, no Angular) **will replace `annoq-site`** as stage 4,
+  but is **not yet released** — stage-4 work still targets `annoq-site` (Angular 9) today.
 
 ## Two parallel deployment stacks — critical
 

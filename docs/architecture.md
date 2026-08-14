@@ -73,8 +73,12 @@ generates 500+ GraphQL types** from the ES schema mappings (via `datamodel-codeg
 
 The user-facing Angular 9 SPA at annoq.org. Uses GraphQL code generation
 (`graphql_codegen.ts`) to produce typed client operations against the api-v2 schema.
-Includes integrated documentation. Local dev on `localhost:4205`. A React rewrite,
-**annoq-site-v2**, is in early development (not released) and will eventually succeed it.
+Includes integrated documentation. Local dev on `localhost:4205`.
+
+**Stage 4 is changing:** **annoq-site-v2** — a **React + TypeScript** rewrite (Vite/Vitest, no
+Angular) — **will replace annoq-site**. It is in development and **not yet released**, so
+annoq-site remains the production UI and the target for stage-4 work today. It consumes the same
+api-v2 GraphQL contract, so the shared contracts above apply to it unchanged.
 
 The site is deployed once per stack (see "Parallel deployment stacks" below): production at
 annoq.org and beta at topmed.annoq.org, each from its own branch and pointed at its own api-v2
@@ -93,7 +97,7 @@ api-v2; annoq-api is retained only for legacy context.
 | Consumer | Kind | Notes |
 |----------|------|-------|
 | annoq-site | Web UI (Angular 9) | Production at annoq.org (HRC r1.1); beta at topmed.annoq.org (TOPMed Freeze 8); SNP-only |
-| annoq-site-v2 | Web UI (React) | Next-gen, unreleased |
+| annoq-site-v2 | Web UI (React + TypeScript) | Next-gen UI; **will replace annoq-site** — in development, not yet released |
 | annoq-py | Python client library | Wraps API + SNPWay workflows; 10k pagination / 20-field limits |
 | AnnoQR | R client package | Wraps API + SNPWay workflows; default base URL `enrichment-dev.annoq.org` |
 | Annoq_Overrepr_Workflow (SNPWay) | Web app + FastAPI | SNP→gene mapping + PANTHER overrepresentation; live at snpway.annoq.org |

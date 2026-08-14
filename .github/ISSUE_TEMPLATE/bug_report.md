@@ -15,11 +15,11 @@ labels: bug
 - [ ] Stage 1 — annoq-data-builder (annotation content / generated artifacts)
 - [ ] Stage 2 — annoq-database (conversion / Elasticsearch index)
 - [ ] Stage 3 — annoq-api-v2 (GraphQL / API)
-- [ ] Stage 4 — annoq-site (web UI)
+- [ ] Stage 4 — annoq-site (web UI, Angular 9 — current)
 - [ ] Consumer — annoq-py (Python client)
 - [ ] Consumer — AnnoQR (R client)
 - [ ] Consumer — Annoq_Overrepr_Workflow / SNPWay (snpway.annoq.org)
-- [ ] Consumer — annoq-site-v2 (React, unreleased)
+- [ ] Consumer — annoq-site-v2 (React, unreleased — will replace annoq-site)
 - [ ] Not sure — needs localization
 
 ## Reproduction
