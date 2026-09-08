@@ -15,15 +15,16 @@ labels: bug
 - [ ] Stage 1 — annoq-data-builder (annotation content / generated artifacts)
 - [ ] Stage 2 — annoq-database (conversion / Elasticsearch index)
 - [ ] Stage 3 — annoq-api-v2 (GraphQL / API)
-- [ ] Stage 4 — annoq-site (web UI, Angular 9 — current)
+- [ ] Stage 4 — annoq-site-v2 (web UI, React — **annoq.org / HRC**)
+- [ ] Stage 4 — annoq-site (web UI, Angular 9 — **topmed.annoq.org / TOPMed**)
 - [ ] Consumer — annoq-py (Python client)
 - [ ] Consumer — AnnoQR (R client)
 - [ ] Consumer — Annoq_Overrepr_Workflow / SNPWay (snpway.annoq.org)
-- [ ] Consumer — annoq-site-v2 (React, unreleased — will replace annoq-site)
 - [ ] Not sure — needs localization
 
 ## Reproduction
-<!-- Exact variant / query / URL. Prod (annoq.org / api-v2.annoq.org) or local? -->
+<!-- Exact variant / query / URL. Which stack: annoq.org (HRC, React UI) or
+     topmed.annoq.org (TOPMed, Angular UI)? Prod or local? -->
 - Variant / query / URL:
 - Environment (prod / local):
 - If UI: which api-v2 endpoint is it pointed at?
@@ -39,4 +40,4 @@ labels: bug
 - Source data:
 
 ## Additional context
-<!-- Logs, screenshots, versions (ES 8.5.x, Python 3.11+, Angular 9). -->
+<!-- Logs, screenshots, versions (ES 8.5.x, Python 3.11+, Angular 9 / Node 20+). -->

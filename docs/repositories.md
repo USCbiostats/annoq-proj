@@ -4,10 +4,10 @@ Deep dive on each AnnoQ repository: what it does, how it's built, its inputs/out
 things to watch out for. The **core pipeline** repos (stages 1–4) follow the data-flow order;
 after them come the **historical API**, the **client libraries**, and **related applications**.
 
-- Core pipeline: [annoq-data-builder](#1-annoq-data-builder) → [annoq-database](#2-annoq-database) → [annoq-api-v2](#3-annoq-api-v2) → [annoq-site](#4-annoq-site)
+- Core pipeline: [annoq-data-builder](#1-annoq-data-builder) → [annoq-database](#2-annoq-database) → [annoq-api-v2](#3-annoq-api-v2) → **stage 4, [split by stack](#stage-4--the-web-ui-split-by-stack):** [annoq-site-v2](#4a-annoq-site-v2) (React — HRC/annoq.org) · [annoq-site](#4b-annoq-site) (Angular 9 — TOPMed/topmed.annoq.org)
 - Historical API: [annoq-api](#annoq-api-deprecated)
 - Clients: [annoq-py](#annoq-py), [AnnoQR](#annoqr)
-- Related apps: [Annoq_Overrepr_Workflow (SNPWay)](#annoq_overrepr_workflow--snpway), [annoq-site-v2](#annoq-site-v2) (React — **will replace annoq-site** as stage 4)
+- Related apps: [Annoq_Overrepr_Workflow (SNPWay)](#annoq_overrepr_workflow--snpway)
 
 ---
 
@@ -97,15 +97,69 @@ Local setup pairs with annoq-database sample data. Python 3.11+ required.
 
 ---
 
-## 4. annoq-site
+## Stage 4 — the web UI (split by stack)
+
+**Stage 4 is split by stack.** Two different UI codebases are in production, one per deployment
+stack, and both consume the same **api-v2** GraphQL contract — so every shared api-v2 fact
+(endpoints, limits, annotation tree) applies to both.
+
+| Stack | Repo | Framework | Deployed at | Dataset | Branch |
+|-------|------|-----------|-------------|---------|--------|
+| HRC (production) | [annoq-site-v2](#4a-annoq-site-v2) | React + TypeScript (Vite) | <https://annoq.org> | HRC r1.1 | `main` |
+| TOPMed (beta) | [annoq-site](#4b-annoq-site) | Angular 9 | <https://topmed.annoq.org> | TOPMed: Freeze 8 | TopMed branch |
+
+Until the **TOPMed cutover** (switching topmed.annoq.org to annoq-site-v2), a stage-4 change
+generally has to be implemented **twice — once in each framework**. There is no shared branch to
+merge between the two repos.
+
+---
+
+## 4a. annoq-site-v2
+
+<https://github.com/USCbiostats/annoq-site-v2>
+
+> ✅ **Released — the production UI at [annoq.org](https://annoq.org) (HRC r1.1)**, stage 4 of the
+> HRC stack. It **superseded [annoq-site](#4b-annoq-site) on HRC**; annoq-site still serves the
+> TOPMed beta pending the **TOPMed cutover**.
+
+**Purpose:** The AnnoQ web UI — interactive annotation browsing/querying — for the HRC stack.
+
+**Stack:** **React** + TypeScript, built with **Vite** (tests via Vitest) — **no Angular**.
+Requires **Node.js 20+**.
+
+**Structure (key paths):**
+- `src/lib/environment.ts` — **active dataset + api-v2 endpoint** (`dataset`, `annotationApiV2`);
+  overridable at run time with `VITE_ANNOQ_API_V2`
+- `src/generated/graphql.ts` — generated GraphQL types (`npm run graphql_codegen`)
+- `src/data/panther_terms.json` — PANTHER term-label lookup (distributed by the data-builder stage)
+- `src/components/`, `src/features/`, `src/pages/` — UI code · `src/test/` — Vitest tests
+
+**Inputs:** the api-v2 GraphQL schema/endpoint.
+**Outputs:** the public site at <https://annoq.org>.
+
+**Build/dev:** `npm install` → `npm run graphql_codegen` → `npm run test` → `npm run build` →
+`npm run preview`. Dev server: `npm run dev` on **port 5173** (`npm run dev -- --port <N>` to
+change). Point at another stack with `VITE_ANNOQ_API_V2=https://api-v2.topmed.annoq.org`.
+
+**Gotchas:** **codegen must run before `npm run build`** — the build's typecheck reads
+`src/generated/graphql.ts`, so a schema change that skips codegen fails the build (or silently
+compiles against stale types). Regenerate after any api-v2 change, and make sure codegen points at
+the api-v2 instance that actually has your field deployed. Because stage 4 is **split by stack**, a
+change here covers **annoq.org only** — mirror it in [annoq-site](#4b-annoq-site) for TOPMed until
+the cutover.
+
+---
+
+## 4b. annoq-site
 
 <https://github.com/USCbiostats/annoq-site>
 
 **Purpose:** Web UI for AnnoQ — interactive annotation browsing/querying with integrated docs.
 
-> **Being replaced:** [annoq-site-v2](#annoq-site-v2) (React + TypeScript) **will replace
-> annoq-site** as stage 4. It is not yet released, so annoq-site remains the production UI and
-> the target for stage-4 work today.
+> **Superseded on HRC, still the TOPMed beta UI.** [annoq-site-v2](#4a-annoq-site-v2) (React) is
+> **released** and now serves **annoq.org (HRC r1.1)**. annoq-site remains stage 4 for the
+> **TOPMed stack** at **topmed.annoq.org**, so TOPMed UI work still lands here — but it is *not*
+> deprecated and *not* the HRC UI any more.
 
 **Stack:** Angular 9, TypeScript (~62%), HTML, SCSS.
 
@@ -113,36 +167,37 @@ Local setup pairs with annoq-database sample data. Python 3.11+ required.
 - `src/` — application source
 - `e2e/` — end-to-end tests
 - `scripts/` — build/utility scripts
-- `metadata/` — configuration data
+- `metadata/` — configuration data, incl. `metadata/annotation_tree.csv` (the annotation-tree
+  source of truth for the data-builder stage — still lives here, not in annoq-site-v2)
 - `graphql_codegen.ts` — GraphQL client code generation against the api-v2 schema
 
 **Inputs:** the api-v2 GraphQL schema/endpoint.
-**Outputs:** the public site at <http://annoq.org/> (dev: `npm install` + `ng serve`, `localhost:4205`).
+**Outputs:** the beta site at <https://topmed.annoq.org> (dev: `npm install` + `ng serve`,
+`localhost:4205`).
 
-**Deployments & datasets:** annoq-site is deployed as part of two **parallel stacks** (see
-[architecture.md](architecture.md#parallel-deployment-stacks-hrc--topmed)). Each stack has its own
-branch and points at its **own api-v2 instance**, which in turn queries its **own database/ES
-instance**.
+**Deployments & datasets:** annoq-site is stage 4 for **one** of the two **parallel stacks** (see
+[architecture.md](architecture.md#parallel-deployment-stacks-hrc--topmed)). Each stack points at its
+**own api-v2 instance**, which in turn queries its **own database/ES instance**.
 
-| Deployment | URL | Dataset | Branch | Talks to |
-|------------|-----|---------|--------|----------|
-| Production | <https://annoq.org> | **HRC r1.1** (Haplotype Reference Consortium) | `main` | `api-v2.annoq.org` → database instance A |
-| Beta | <https://topmed.annoq.org> | **TOPMed: Freeze 8** | TopMed branch | `api-v2.topmed.annoq.org` → database instance B |
+| Deployment | URL | Dataset | Branch | Talks to | Served by |
+|------------|-----|---------|--------|----------|-----------|
+| Production | <https://annoq.org> | **HRC r1.1** (Haplotype Reference Consortium) | `main` | `api-v2.annoq.org` → database instance A | **annoq-site-v2** (React) |
+| Beta | <https://topmed.annoq.org> | **TOPMed: Freeze 8** | TopMed branch | `api-v2.topmed.annoq.org` → database instance B | **annoq-site** (Angular 9) |
 
 Both deployments currently serve **SNP data only — no indels** — even though the upstream
 pipeline (data-builder → database) can process both SNVs and indels. The two stacks share the
 codebase's history but run on **separate infrastructure** (distinct api-v2 and database/ES
 instances) and are released independently, so they can carry different data/schema versions at
-any moment. The branch split extends across the stack — **data-builder, api-v2, and annoq-site
-each have a `main` line and a TopMed line**.
+any moment. The branch split extends across the stack — **data-builder and api-v2 each have a
+`main` line and a TopMed line**; stage 4 is split by **repo** instead (annoq-site-v2 for HRC,
+annoq-site for TOPMed).
 
 **Gotchas:** Angular 9 is dated — mind Node/CLI version compatibility. Client types are
 codegen'd from the live/target GraphQL schema; regenerate after api-v2 changes. Keep the
 target API URL (dev vs prod) correct in the environment config. Its replacement,
-[annoq-site-v2](#annoq-site-v2) (React), is in development but not yet released — large
-investments in the Angular codebase may be short-lived.
-
----
+[annoq-site-v2](#4a-annoq-site-v2) (React), is **already live on HRC** — so work invested here
+buys time only until the **TOPMed cutover**, and anything long-lived should be implemented in
+annoq-site-v2 as well.
 
 ## annoq-api (deprecated)
 
@@ -244,28 +299,3 @@ interfaces, defaulting to the **HRC / production** instance:
 `/download` endpoint (not just `/graphql`). The endpoints are env-configurable, so point it at
 the intended stack. The same SNPWay workflow is also exposed programmatically through annoq-py
 and AnnoQR. Local dev runs the backend with `uvicorn main:app --port 8002 --reload`.
-
----
-
-## annoq-site-v2
-
-<https://github.com/USCbiostats/annoq-site-v2>
-
-> 🚧 **In development, not yet released** — **will replace [annoq-site](#4-annoq-site)** as
-> stage 4 (the AnnoQ web UI).
-
-**Purpose:** Next-generation web UI for the AnnoQ platform — the designated replacement for
-annoq-site.
-
-**Stack:** **React** + TypeScript, built with Vite (tests via Vitest) — **no Angular**.
-REST/GraphQL endpoint and dataset are configurable via environment variables.
-
-**What it does:** A React rewrite of the annoq-site frontend, providing a configurable
-interface to query and interact with genomic annotations. It consumes the same **api-v2** GraphQL
-contract as annoq-site, so shared api-v2 facts (endpoints, limits, annotation tree) apply here too.
-
-**Gotchas:** early stage (few commits, no releases) — treat as experimental for now. It **will
-replace annoq-site as stage 4** when it ships; until then, annoq-site (Angular 9) remains the
-production UI. New UI work should account for both: fixes needed long-term will have to land in
-(or be re-implemented in) annoq-site-v2. Note that the parallel HRC/TOPMed stack split will need
-to be reflected here as well when it takes over stage 4.

@@ -1,6 +1,6 @@
 ---
 name: annoq-data-build
-description: Playbook for the annoq-data-builder post-WGSA build — after WGSA/WGSAdd has produced base annotation VCFs, add PANTHER/GO/Reactome/Enhancer functional annotations (Java module) and the HRC mapping columns (TOPMed), then generate and distribute the tree/mappings/pickle files consumed by annoq-database, annoq-api-v2 and annoq-site. Use when running or documenting the data-builder stage, regenerating anno_tree.json / annoq_mappings.json / doc_type.pkl, or adding annotation columns to the VCF.
+description: Playbook for the annoq-data-builder post-WGSA build — after WGSA/WGSAdd has produced base annotation VCFs, add PANTHER/GO/Reactome/Enhancer functional annotations (Java module) and the HRC mapping columns (TOPMed), then generate and distribute the tree/mappings/pickle files consumed by annoq-database, annoq-api-v2 and both stage-4 site repos (annoq-site-v2, annoq-site). Use when running or documenting the data-builder stage, regenerating anno_tree.json / annoq_mappings.json / doc_type.pkl, or adding annotation columns to the VCF.
 ---
 
 # AnnoQ Data-Builder Run Playbook (post-WGSA)
@@ -22,7 +22,7 @@ WGSA (Part 1) ──▶ [HRC merge, TOPMed only] ──▶ [Part 2] add function
                                                                    │
                                           [Part 3] generate tree/mappings/pickle
                                                                    │
-        annoq-database (index) ◀── annoq-api-v2 (schema) ◀── annoq-site (tree/terms)
+  annoq-database (index) ◀── annoq-api-v2 (schema) ◀── annoq-site + annoq-site-v2 (tree/terms)
 ```
 
 Two kinds of output: (a) **annotated VCFs** (functional + HRC columns) for annoq-database to
@@ -42,8 +42,10 @@ meaningless on the HRC stack itself. Everything else applies to both. Both deplo
 
 ## Prerequisites
 - WGSA (Part 1) output VCFs are present.
-- Sibling checkouts of `annoq-site`, `annoq-database`, `annoq-api-v2` (and `annoq-api` for its
-  `anno_tree.json`) on the correct stack branch. If missing, offer `gh repo clone`.
+- Sibling checkouts of `annoq-site`, `annoq-site-v2`, `annoq-database`, `annoq-api-v2` (and
+  `annoq-api` for its `anno_tree.json`) on the correct stack branch. If missing, offer
+  `gh repo clone`. **Both site repos are stage 4** — annoq-site-v2 serves annoq.org (HRC),
+  annoq-site serves topmed.annoq.org (TOPMed).
 - Python env: `python3 -m venv env && . env/bin/activate && pip3 install -r requirements.txt`.
 
 ## Procedure
@@ -56,8 +58,10 @@ annotation file first:
    `java_wgsa_add/add_panther_enhancer/src/main/resources/add_panther_enhancer.properties`
    (or edit that property to point at the file).
 3. Run the Java module to annotate the VCFs. It also emits
-   `java_wgsa_add/.../diagnostics/panther_terms.json` — **copy that to**
-   `annoq-site/src/@annoq.common/data/panther_terms.json` (the UI's term-label lookup).
+   `java_wgsa_add/.../diagnostics/panther_terms.json` — **copy it to both site repos** (the UI's
+   term-label lookup; stage 4 is split by stack):
+   - `annoq-site-v2/src/data/panther_terms.json` (HRC — annoq.org)
+   - `annoq-site/src/@annoq.common/data/panther_terms.json` (TOPMed — topmed.annoq.org)
 
 ### Part 2.1 — add HRC mapping columns (TOPMed only) — runs after WGSA, before Part 2
 ```
@@ -141,7 +145,9 @@ Producing the artifacts is stage 1. To make the new fields live:
   and bulk-load converted JSON (`src/index_es_json.py`), using the new `doc_type.pkl`.
 - **annoq-api-v2 (3):** regenerate GraphQL types from the new ES schema (`class_generators/`);
   refresh `data/anno_tree.json` + `data/api_mapping_anno_tree.json`.
-- **annoq-site (4):** GraphQL codegen; surface the field; the tree + `panther_terms.json` drive UI.
+- **stage 4 — both site repos:** GraphQL codegen; surface the field; the tree +
+  `panther_terms.json` drive the UI. `annoq-site-v2` (HRC, annoq.org) **and** `annoq-site`
+  (TOPMed, topmed.annoq.org) until the TOPMed cutover.
 - Then run **`/annoq-doc-sync`** — a new field/tree is a shared contract.
 
 ## Local end-to-end load test (stage 1 → stage 2), in strict order
@@ -230,4 +236,6 @@ bash scripts/run_jobs.sh --work_name <WORK_NAME> --base_dir <BASE_DIR> --es_inde
   - Needs `data/doc_type.pkl` present (see the version-control gotcha below).
 - Only the JSON is produced here. Loading into ES + the site/api-v2 do **not** run on this box — the
   one annoq-site artifact this stage depends on is `metadata/annotation_tree.csv` (source of the
-  `annoq_mappings.json` / `doc_type.pkl`). Copy the JSON to the index host, then run steps 2–5 there.
+  `annoq_mappings.json` / `doc_type.pkl`). **That file still lives in `annoq-site`**, even though
+  annoq.org is now served by `annoq-site-v2` — annoq-site-v2 has no `metadata/` tree source.
+  Copy the JSON to the index host, then run steps 2–5 there.

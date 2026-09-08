@@ -19,7 +19,13 @@ the stage where it first goes wrong. Only then patch.
 | 1 build | annoq-data-builder | annotation content, ES mappings, tree/pickle artifacts |
 | 2 index | annoq-database | VCF/TSV → JSON conversion, ES index creation + bulk load |
 | 3 API | **annoq-api-v2** (current) | GraphQL schema (generated from ES), resolvers, FastAPI service |
-| 4 UI | annoq-site | Angular 9 components, GraphQL client queries, rendering |
+| 4 UI (HRC) | **annoq-site-v2** | React components (Vite), GraphQL client queries, rendering — serves annoq.org |
+| 4 UI (TOPMed) | **annoq-site** | Angular 9 components, GraphQL client queries, rendering — serves topmed.annoq.org |
+
+> **Stage 4 is split by stack.** `annoq-site-v2` (React) is **released** and serves
+> **annoq.org (HRC)**; `annoq-site` (Angular 9) is **superseded on HRC but still the TOPMed beta
+> UI** at **topmed.annoq.org**. A UI bug that affects both stacks must be fixed in **both repos**
+> (two frameworks) until the **TOPMed cutover**.
 
 **API consumers** (also query api-v2 — a bug may live here, or here be a *symptom* of a stage-3 bug):
 
@@ -28,7 +34,6 @@ the stage where it first goes wrong. Only then patch.
 | Python client | annoq-py | Python wrapper; encodes API limits (10k pagination / 20 fields) |
 | R client | AnnoQR | R wrapper; default base URL `enrichment-dev.annoq.org` |
 | SNPWay app | Annoq_Overrepr_Workflow | SNP→gene + PANTHER overrepresentation; live at snpway.annoq.org |
-| Next-gen UI | annoq-site-v2 (React, unreleased) | UI rewrite that **will replace annoq-site**; fix here too if the bug should persist after the switchover |
 
 > **annoq-api** is the deprecated original API (Flask/REST) — do not fix new issues there;
 > they belong in api-v2 unless a legacy consumer specifically requires it.
@@ -50,7 +55,8 @@ the stage where it first goes wrong. Only then patch.
 Walk upstream, stopping at the first stage where the value is already wrong:
 
 1. **UI wrong?** Run the same query in the GraphQL playground (`/docs` on api-v2).
-   - Playground correct → bug is in **annoq-site (4)**.
+   - Playground correct → bug is in the **stage-4 site (4)**: `annoq-site-v2` if the report is
+     about annoq.org, `annoq-site` if it is about topmed.annoq.org.
 2. **GraphQL wrong/missing?** Query Elasticsearch directly (Kibana or `_search`).
    - Is the field in the generated GraphQL schema at all? If ES is correct but GraphQL isn't
      → bug is in **annoq-api-v2 (3)** (type generation or resolver).
@@ -70,7 +76,8 @@ Use the "Tracing a value backwards" section of `docs/pipeline.md`.
 - Prefer a sibling checkout (`../annoq-<stage>`). If absent, offer to
   `gh repo clone USCbiostats/annoq-<stage>`.
 - **Check out the branch for the affected stack** (`main` for HRC, the TopMed branch for TOPMed).
-  data-builder, api-v2, and annoq-site each have both branch lines.
+  data-builder and api-v2 each have both branch lines. **Stage 4 is split by repo, not branch:**
+  the HRC UI is `annoq-site-v2` and the TOPMed UI is `annoq-site`.
 - If the fix needs a **new branch** in each repo, follow the naming/commit convention in
   `CLAUDE.md` → **Branch & commit naming**: owning repo `issue-<num>-<desc>` / `For #<num>`;
   other repos `<owning-repo>-<num>-<desc>` / `For #USCbiostats/<owning-repo>/issues/<num>`.
@@ -79,7 +86,8 @@ Use the "Tracing a value backwards" section of `docs/pipeline.md`.
 
 ### 4. Write a failing test / minimal check first
 - **api-v2 (3):** add/extend a `pytest` case reproducing the wrong result.
-- **site (4):** reproduce in the component or an e2e spec.
+- **site (4):** reproduce in the component or a test — Vitest in `annoq-site-v2` (HRC),
+  the component or an e2e spec in `annoq-site` (TOPMed).
 - **database (2):** a small conversion/index check against sample JSON.
 - **data-builder (1):** verify the generated artifact for the affected field.
 
@@ -113,7 +121,12 @@ Use the "Tracing a value backwards" section of `docs/pipeline.md`.
   that isn't in the ES index yet.
 - Ignoring the unique-id format (`chrom+pos+ref+alt`) when documents appear "missing" — they
   may be overwritten by id collisions.
-- ES/Angular version sensitivity (ES 8.5.x, Angular 9) — check versions before deep debugging.
+- ES/frontend version sensitivity (ES 8.5.x; Angular 9 in annoq-site, Node 20+/Vite in
+  annoq-site-v2) — check versions before deep debugging.
 - Debugging the wrong stack, or assuming the two api-v2/database instances are identical — they
   are separate and may run different data/schema versions.
 - Fixing only one branch when the bug is dataset-agnostic and affects both stacks.
+- Fixing a UI bug in only one **site repo** — annoq.org (annoq-site-v2) and topmed.annoq.org
+  (annoq-site) are different codebases, so the other stack keeps the bug until the TOPMed cutover.
+- Debugging the wrong UI codebase: check the URL first (annoq.org = React, topmed.annoq.org =
+  Angular 9).

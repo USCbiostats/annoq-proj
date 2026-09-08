@@ -24,8 +24,8 @@ When the task matches, invoke the skill rather than improvising:
 
 ## The pipeline (4 stages)
 
-`annoq-data-builder` → `annoq-database` → `annoq-api-v2` → `annoq-site`
-(build annotations → index into Elasticsearch → GraphQL API → Angular UI)
+`annoq-data-builder` → `annoq-database` → `annoq-api-v2` → **web UI (stage 4)**
+(build annotations → index into Elasticsearch → GraphQL API → browse/query UI)
 
 - **Current API is `annoq-api-v2`** (FastAPI + Strawberry GraphQL). `annoq-api` is **deprecated**
   — do not put new work there.
@@ -33,20 +33,24 @@ When the task matches, invoke the skill rather than improvising:
   before the API can expose it.
 - API **consumers** also query api-v2: `annoq-py` (Python), `AnnoQR` (R),
   `Annoq_Overrepr_Workflow` / SNPWay (snpway.annoq.org).
-- `annoq-site-v2` (**React** + TypeScript, no Angular) **will replace `annoq-site`** as stage 4,
-  but is **not yet released** — stage-4 work still targets `annoq-site` (Angular 9) today.
+- **Stage 4 is split by stack.** `annoq-site-v2` (**React** + TypeScript, Vite, no Angular) is
+  **released** and is the production UI at **annoq.org (HRC r1.1)**. `annoq-site` (Angular 9) is
+  **superseded on HRC but still the TOPMed beta UI** at **topmed.annoq.org**. Until the **TOPMed
+  cutover**, a stage-4 change lands in **both site repos** — get both, or say which you skipped.
 
 ## Two parallel deployment stacks — critical
 
 The pipeline is deployed **twice**. Each stack has its own branch, api-v2 instance, and
 database/ES instance. **Always establish which stack a task concerns first.**
 
-| Stack | Branch | Dataset | api-v2 | Site |
-|-------|--------|---------|--------|------|
-| **HRC** (production) | `main` | HRC r1.1 | `https://api-v2.annoq.org` | annoq.org |
-| **TOPMed** (beta) | TopMed branch | TOPMed: Freeze 8 | `https://api-v2.topmed.annoq.org` | topmed.annoq.org |
+| Stack | Branch | Dataset | api-v2 | Site | Site repo |
+|-------|--------|---------|--------|------|-----------|
+| **HRC** (production) | `main` | HRC r1.1 | `https://api-v2.annoq.org` | annoq.org | `annoq-site-v2` (React) |
+| **TOPMed** (beta) | TopMed branch | TOPMed: Freeze 8 | `https://api-v2.topmed.annoq.org` | topmed.annoq.org | `annoq-site` (Angular 9) |
 
-- The branch split spans **data-builder, api-v2, and annoq-site**.
+- The branch split spans **data-builder, api-v2, and annoq-site**. The stage-4 split is by
+  **repo**, not branch: HRC is served by `annoq-site-v2` (`main`), TOPMed by `annoq-site`
+  (TopMed branch).
 - A dataset-agnostic code change usually must land on **both branches** and be re-indexed against
   **both** database instances. A per-instance config value targets **one** stack — get the right one.
 - The two api-v2/database instances are **separate** and may run different data/schema versions —
@@ -84,5 +88,6 @@ branches and commits so every repo points back to the owning issue.
 
 ## Sibling repos (recommended sibling checkout layout)
 
-`annoq-data-builder`, `annoq-database`, `annoq-api-v2`, `annoq-site`, `annoq-py`, `AnnoQR`,
-`Annoq_Overrepr_Workflow`, `annoq-site-v2` — see [`docs/repositories.md`](docs/repositories.md).
+`annoq-data-builder`, `annoq-database`, `annoq-api-v2`, `annoq-site-v2` (stage 4, HRC),
+`annoq-site` (stage 4, TOPMed), `annoq-py`, `AnnoQR`, `Annoq_Overrepr_Workflow` — see
+[`docs/repositories.md`](docs/repositories.md).
