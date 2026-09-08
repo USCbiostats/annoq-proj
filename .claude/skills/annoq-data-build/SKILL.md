@@ -101,7 +101,9 @@ Register these in the annotation tree (below): `chr_pos` under basic info (node 
 HRC/HG19 fields under **HG19 Info** (node `700`).
 
 ### Part 3 — generate and distribute the metadata/mapping files
-1. Update `annoq-site/metadata/annotation_tree.csv` for any metadata changes, **including the HRC
+1. Update `annoq-site/metadata/annotation_tree.csv` for any metadata changes (**still the
+   authoritative copy** — see "Pending: annotation_tree.csv is moving to annoq-site-v2" below),
+   **including the HRC
    fields** (`Mapped_in_HRC`, `HRC_chr_pos`, `HRC_chr_pos_ref_alt` under HG19 Info; `chr_pos` under
    basic info). `tools/gen_col_update_info.py` can help track column changes. This CSV is the
    **hand-maintained source of truth**.
@@ -125,6 +127,44 @@ HRC/HG19 fields under **HG19 Info** (node `700`).
      --anno_tree /do/not/use/do_not_use_anno_tree.json  -d ,
    ```
    Copy `doc_type.pkl` → `annoq-database/data/doc_type.pkl`.
+
+## Pending: annotation_tree.csv is moving to annoq-site-v2
+
+The annotation-tree source of truth still lives in **`annoq-site/metadata/annotation_tree.csv`**,
+even though annoq-site no longer serves annoq.org. It has been **replicated** to
+`annoq-site-v2/metadata/` (repo root, alongside `README.md`), but the move is **phase 1 of 2**:
+
+- **Now (phase 1):** `annoq-site/metadata/annotation_tree.csv` is still authoritative — edit it
+  there, and keep passing that path to the generators below. The annoq-site-v2 copy is seeded from
+  annoq-site **`master`** (558 rows) and is deliberately behind the `issue-78-add-hrc-mapping-info`
+  version (840 rows, which adds `chr_pos`, `Mapped_in_HRC`, `HRC_chr_pos`,
+  `HRC_chr_pos_ref_alt`). Pointing the generators at it today would **drop the HRC columns and
+  282 rows**.
+- **Phase 2 (after [annoq-site#78](https://github.com/USCbiostats/annoq-site/issues/78) merges to
+  `master`):** refresh `annoq-site-v2/metadata/annotation_tree.csv` from the merged annoq-site
+  `master`, verify the row count and the HRC columns, then repoint every reference below.
+
+**Phase-2 repoint checklist** — every place the old path is documented. All of these are prose or
+comments; **no code hardcodes the path** (the scripts take `--input_csv` / `--input`, and
+`tools/scripts/run_pre_work.sh` uses `$INPUT_DIR`), so nothing breaks at flip time:
+
+| Repo | File | What to change |
+|------|------|----------------|
+| annoq-proj | `.claude/skills/annoq-data-build/SKILL.md` | Part 3 step 1, the two generator commands, the `--output_csv` gotcha, and the local-load note |
+| annoq-proj | `docs/repositories.md` | the annoq-site `metadata/` bullet (§4b) and annoq-site-v2 (§4a) |
+| annoq-data-builder | `README.md` | Part 2 field registration; Part 4 steps 2–4 (both generator commands + the DO-NOT-overwrite line) |
+| annoq-data-builder | `tools/gen_col_update_info.py` | the GitHub-URL comments near the bottom |
+| annoq-database | `README.md` | the "generated upstream … from annoq-site/metadata" line |
+| annoq-api-v2 | `docs/issue-78-hrc-mapping.md` | the "registered in annoq-site/metadata" line |
+| annoq-api-v2 | `docs/superpowers/specs/2026-07-15-hrc-search-design.md` | same |
+| annoq-site | `metadata/README.md` | flip the banner: this copy becomes the stale one |
+| annoq-site-v2 | `metadata/README.md` | drop the "not yet canonical" banner |
+
+Then run **`/annoq-doc-sync`** — the path is a documented shared value.
+
+> annoq-site-v2 does **not** read this file at runtime; it builds its tree from the api-v2 response
+> (`src/lib/annotations.ts`). The directory is build-time input for annoq-data-builder only, so
+> hosting it there needs no site-v2 code change.
 
 ## Gotchas
 - **DO NOT** overwrite `annoq-site/metadata/annotation_tree.csv` with the `--output_csv`

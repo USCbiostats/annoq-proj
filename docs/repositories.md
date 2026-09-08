@@ -136,6 +136,12 @@ Requires **Node.js 20+**.
   overridable at run time with `VITE_ANNOQ_API_V2`
 - `src/generated/graphql.ts` — generated GraphQL types (`npm run graphql_codegen`)
 - `src/data/panther_terms.json` — PANTHER term-label lookup (distributed by the data-builder stage)
+- `metadata/annotation_tree.csv` + `README.md` — **replicated from
+  [annoq-site](#4b-annoq-site), not yet canonical.** The annotation-tree source of truth moves
+  here once [annoq-site#78](https://github.com/USCbiostats/annoq-site/issues/78) merges to
+  `master`; until then edit the annoq-site copy. Build-time input for annoq-data-builder only —
+  the app builds its tree from the api-v2 response (`src/lib/annotations.ts`), not from this file.
+  Phase-2 checklist: [data-build skill](../.claude/skills/annoq-data-build/SKILL.md)
 - `src/components/`, `src/features/`, `src/pages/` — UI code · `src/test/` — Vitest tests
 
 **Inputs:** the api-v2 GraphQL schema/endpoint.
@@ -171,8 +177,11 @@ the cutover.
 - `src/` — application source
 - `e2e/` — end-to-end tests
 - `scripts/` — build/utility scripts
-- `metadata/` — configuration data, incl. `metadata/annotation_tree.csv` (the annotation-tree
-  source of truth for the data-builder stage — still lives here, not in annoq-site-v2)
+- `metadata/` — configuration data, incl. `metadata/annotation_tree.csv`, the hand-maintained
+  annotation-tree source of truth for the data-builder stage. **Still the authoritative copy**,
+  but it has been replicated to `annoq-site-v2/metadata/` and moves there once
+  [annoq-site#78](https://github.com/USCbiostats/annoq-site/issues/78) merges to `master` — see
+  the phase-2 checklist in the [data-build skill](../.claude/skills/annoq-data-build/SKILL.md)
 - `graphql_codegen.ts` — GraphQL client code generation against the api-v2 schema
 
 **Inputs:** the api-v2 GraphQL schema/endpoint.
