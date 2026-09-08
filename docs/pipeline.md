@@ -83,10 +83,10 @@ Start where the symptom appears and walk upstream until the value is correct:
 The pipeline runs as **two parallel stacks**, each with its own api-v2 instance and its own
 database/ES instance (see [architecture.md](architecture.md#parallel-deployment-stacks-hrc--topmed)):
 
-| Stack | Site | Site repo | api-v2 endpoint | Dataset | Branch |
-|-------|------|-----------|-----------------|---------|--------|
-| HRC (production) | <https://annoq.org> | **annoq-site-v2** (React) | <https://api-v2.annoq.org> | HRC r1.1 | `main` |
-| TOPMed (beta) | <https://topmed.annoq.org> | **annoq-site** (Angular 9) | <https://api-v2.topmed.annoq.org> | TOPMed: Freeze 8 | TopMed branch |
+| Stack | Site | Site repo | api-v2 endpoint | Dataset | Code refs |
+|-------|------|-----------|-----------------|---------|-----------|
+| HRC (production) | <https://annoq.org> | **annoq-site-v2** (React) | <https://api-v2.annoq.org> | HRC r1.1 | default branch (`master`; `main` in annoq-site-v2) |
+| TOPMed (beta) | <https://topmed.annoq.org> | **annoq-site** (Angular 9) | <https://api-v2.topmed.annoq.org> | TOPMed: Freeze 8 | **issue-19 line** deployed; **issue-78 line** in flight ([refs](architecture.md#topmed-refs--what-topmedannoqorg-is-built-from)) |
 
 Plus:
 - **SNPWay:** <https://snpway.annoq.org>
@@ -97,6 +97,9 @@ Plus:
 > stack** the report is about (annoq.org vs topmed.annoq.org) — the two stacks have separate
 > api-v2 and database instances **and separate UI codebases** (annoq-site-v2 vs annoq-site), and
 > may run different data/schema versions, so a value can differ between them and still be correct.
+> For TOPMed also ask **which line**: topmed.annoq.org serves the **issue-19** branches, while the
+> **issue-78** branches (HRC-mapping search, new columns) are not deployed there yet — so a field
+> that exists in the code may legitimately be absent from the live site.
 
 Always confirm which api-v2 endpoint the site is pointed at before debugging a UI issue —
 a "bug" is often just the dev site talking to prod (or vice versa).

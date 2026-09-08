@@ -44,8 +44,11 @@ the stage where it first goes wrong. Only then patch.
 - Get exact reproduction: the variant/query/URL, expected vs actual, and environment.
 - **Identify which deployment stack** the report is about — the pipeline runs as two parallel
   stacks, each with its own branch, api-v2 instance, and database/ES instance:
-  - **HRC stack** (production) — annoq.org → API `api-v2.annoq.org`, `main` branch, dataset HRC r1.1.
-  - **TOPMed stack** (beta) — topmed.annoq.org → API `api-v2.topmed.annoq.org`, TopMed branch,
+  - **HRC stack** (production) — annoq.org → API `api-v2.annoq.org`, each repo's **default branch**
+    (`master`; `main` in annoq-site-v2), dataset HRC r1.1.
+  - **TOPMed stack** (beta) — topmed.annoq.org → API `api-v2.topmed.annoq.org`, a TOPMed **issue
+    branch** (there is no `TopMed` branch); topmed.annoq.org is deployed from the **issue-19**
+    line, so a field that exists only on the **issue-78** line is legitimately absent live,
     dataset TOPMed Freeze 8.
   A value can differ between stacks and still be correct, so pin the stack before calling it a bug.
 - **Confirm which api-v2 instance the site targets** — a frequent false bug is a UI pointed at
@@ -75,9 +78,20 @@ Use the "Tracing a value backwards" section of `docs/pipeline.md`.
 ### 3. Locate the repo and the branch
 - Prefer a sibling checkout (`../annoq-<stage>`). If absent, offer to
   `gh repo clone USCbiostats/annoq-<stage>`.
-- **Check out the branch for the affected stack** (`main` for HRC, the TopMed branch for TOPMed).
-  data-builder and api-v2 each have both branch lines. **Stage 4 is split by repo, not branch:**
-  the HRC UI is `annoq-site-v2` and the TOPMed UI is `annoq-site`.
+- **Check out the ref for the affected stack.** Defaults are `master` everywhere except
+  `annoq-site-v2` (`main`). **TOPMed has two branch lines** — no `TopMed` branch exists:
+  - **issue-19 line** — `issue-19-load-topmed` (annoq-site) +
+    `annoq-site-19-add-update-metadata-for-top-med-data` (data-builder / database / api-v2).
+    **This is what topmed.annoq.org is deployed from.** (annoq-site#19, closed.)
+  - **issue-78 line** — `issue-78-add-hrc-mapping-info` (annoq-site) +
+    `annoq-site-78-add-hrc-mapping-info` (data-builder / database / api-v2). Updates since the
+    release; **not deployed yet.** (annoq-site#78, open.)
+
+  Reproduce against the line the report came from — usually **issue-19** for a live TOPMed bug —
+  then decide which line the fix belongs on. Verify refs with
+  `git ls-remote --heads https://github.com/USCbiostats/<repo>.git`.
+  **Stage 4 is split by repo, not ref:** the HRC UI is `annoq-site-v2` and the TOPMed UI is
+  `annoq-site`.
 - If the fix needs a **new branch** in each repo, follow the naming/commit convention in
   `CLAUDE.md` → **Branch & commit naming**: owning repo `issue-<num>-<desc>` / `For #<num>`;
   other repos `<owning-repo>-<num>-<desc>` / `For #USCbiostats/<owning-repo>/issues/<num>`.
@@ -105,7 +119,7 @@ Use the "Tracing a value backwards" section of `docs/pipeline.md`.
   check the API **consumers** (annoq-py, AnnoQR, SNPWay) — they may need matching updates.
 - **Does the fix also belong on the other stack's branch?** If the bug is dataset-agnostic
   (a code bug, not an HRC-only vs TOPMed-only data issue), the fix likely needs to be applied to
-  **both branches** (`main` and TopMed) and validated against **both api-v2 instances**. State
+  **both stacks' refs** and validated against **both api-v2 instances**. State
   explicitly which stack(s) you patched and which still need it.
 - Flag any required downstream work explicitly to the user, even if those repos aren't checked out.
 

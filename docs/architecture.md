@@ -88,8 +88,11 @@ unchanged.
 - **annoq-site** (Angular 9) is **superseded on HRC but still the TOPMed beta UI** at
   **topmed.annoq.org**. It uses `graphql_codegen.ts` to produce typed client operations and
   carries the integrated documentation.
-- Until the **TOPMed cutover**, a stage-4 change generally has to be made in **both repos** so the
-  two stacks behave the same. See "Parallel deployment stacks" below.
+- Until the **TOPMed cutover** (tracked by **annoq-site#78**, in progress on the issue-78 line), a
+  stage-4 change generally has to be made in **both repos** so the two stacks behave the same. The
+  cutover's end state is a **single site serving TOPMed with HRC as a filter**, which collapses
+  this stage-4 split — and, user-facing, the two-dataset model below. See "Parallel deployment
+  stacks" below.
 
 ## The API and its consumers
 
@@ -121,12 +124,45 @@ api-v2 → site) with its **own code branch**, its **own api-v2 instance**, and 
 database/Elasticsearch instance**. The stacks share the codebase's history but run on separate
 infrastructure and are released independently.
 
+> **Branch reality check (verified 2026-09-08).** There is **no standing `TopMed` branch** on any
+> AnnoQ repo. Default branches are **`master`** for annoq-data-builder, annoq-database,
+> annoq-api-v2 and annoq-site; **`main`** only for annoq-site-v2. TOPMed work lands on **issue
+> branches** — currently `issue-19-load-topmed` (annoq-site) and
+> `annoq-site-19-add-update-metadata-for-top-med-data` (data-builder / database / api-v2). Confirm
+> the ref before assuming a name: `git ls-remote --heads https://github.com/USCbiostats/<repo>.git`
+
+### TOPMed refs — what topmed.annoq.org is built from
+
+There is **no `TopMed` branch**. The TOPMed stack runs on **named issue branches**, in two lines:
+
+| Repo | **issue-19 line — deployed** at topmed.annoq.org | **issue-78 line — in flight** (updates since that release) |
+|------|--------------------------------------------------|------------------------------------------------------------|
+| annoq-data-builder | `annoq-site-19-add-update-metadata-for-top-med-data` | `annoq-site-78-add-hrc-mapping-info` |
+| annoq-database | `annoq-site-19-add-update-metadata-for-top-med-data` | `annoq-site-78-add-hrc-mapping-info` |
+| annoq-api-v2 | `annoq-site-19-add-update-metadata-for-top-med-data` | `annoq-site-78-add-hrc-mapping-info` |
+| annoq-site (stage 4, TOPMed) | `issue-19-load-topmed` | `issue-78-add-hrc-mapping-info` |
+
+- **Owning issues** (both filed on annoq-site, per the branch-naming convention):
+  [annoq-site#19](https://github.com/USCbiostats/annoq-site/issues/19) "Load TOPMed data to the
+  elasticsearch database" (**closed** — this is the deployed line) and
+  [annoq-site#78](https://github.com/USCbiostats/annoq-site/issues/78) "Integrate TopMed website
+  into Annoq.org" (**open** — the active line). **#78 is the TOPMed-cutover umbrella**, in
+  progress on this line. Its **end state is a single site serving TOPMed with HRC as a filter**
+  (`Mapped_in_HRC=Y` via api-v2's `search_hrc`), so the HRC-mapping work is not a side
+  task — it is what *makes* the single-site end state possible, which is why the cutover branches
+  are named `*-add-hrc-mapping-info`.
+- **What is live ≠ what is in flight.** topmed.annoq.org serves the **issue-19** line; the
+  **issue-78** work (HRC-mapping search, new columns) is *not deployed there yet*. When debugging a
+  TOPMed report, check which of the two you are looking at before assuming a field exists.
+- The **HRC** stack tracks each repo's default branch (`master`; `main` in annoq-site-v2). Its exact
+  deploy refs have not been confirmed the same way these TOPMed refs have.
+
 ```
- HRC stack (production) — main branches
+ HRC stack (production) — default branches (`master`; `main` in annoq-site-v2)
    HRC r1.1 ─▶ database/ES instance A ─▶ api-v2.annoq.org ─▶ annoq.org
                                                              (annoq-site-v2, React)
 
- TOPMed stack (beta) — TopMed branches
+ TOPMed stack (beta) — TOPMed issue branches
    TOPMed Freeze 8 ─▶ database/ES instance B ─▶ api-v2.topmed.annoq.org ─▶ topmed.annoq.org
                                                                           (annoq-site, Angular 9)
 ```
@@ -134,7 +170,7 @@ infrastructure and are released independently.
 | Property | HRC stack (production) | TOPMed stack (beta) |
 |----------|------------------------|---------------------|
 | Dataset | HRC r1.1 | TOPMed: Freeze 8 |
-| Code branch line | `main` (data-builder / api-v2 / annoq-site-v2) | TopMed branch (data-builder / api-v2 / annoq-site) |
+| Code refs | default branch — `master` (data-builder / api-v2), `main` (annoq-site-v2) | **issue-19 line** deployed, **issue-78 line** in flight — see [TOPMed refs](#topmed-refs--what-topmedannoqorg-is-built-from); **no `TopMed` branch exists** |
 | api-v2 endpoint | `https://api-v2.annoq.org` | `https://api-v2.topmed.annoq.org` |
 | Database / ES instance | instance A | instance B (separate) |
 | Site URL | annoq.org | topmed.annoq.org |
@@ -153,7 +189,8 @@ infrastructure and are released independently.
 - When debugging, **identify the stack first** (annoq.org vs topmed.annoq.org). The same query
   can legitimately return different values across datasets/instances.
 - The two stacks may run **different schema/data versions** at any given time (e.g. a field added
-  on the TopMed branch but not yet on `main`). Never assume the two api-v2 instances are identical.
+  on the TOPMed issue-78 line but not yet on the default branch, or on issue-78 but not yet
+  deployed to topmed.annoq.org). Never assume the two api-v2 instances are identical.
 
 "SNP-only" remains a property of the *deployed datasets* in both stacks, not a limitation of the
 pipeline code (data-builder/database can process SNVs and indels).

@@ -88,8 +88,10 @@ This is the **current API** and the one all clients should target; it replaced t
 
 **Inputs:** Elasticsearch indices; annotation-tree config.
 **Outputs:** GraphQL endpoint. Runs as **two instances**, one per stack:
-`https://api-v2.annoq.org` (HRC / production, `main`) and `https://api-v2.topmed.annoq.org`
-(TOPMed / beta, TopMed branch) — each backed by its own database/ES instance.
+`https://api-v2.annoq.org` (HRC / production, default branch `master`) and
+`https://api-v2.topmed.annoq.org` (TOPMed / beta, deployed from
+`annoq-site-19-add-update-metadata-for-top-med-data`; `annoq-site-78-add-hrc-mapping-info` is in
+flight) — each backed by its own database/ES instance.
 
 **Gotchas:** GraphQL types are **generated** from the ES schema, not hand-written — a field
 must exist in the index before it can be exposed. Regenerate types after schema changes.
@@ -105,12 +107,14 @@ stack, and both consume the same **api-v2** GraphQL contract — so every shared
 
 | Stack | Repo | Framework | Deployed at | Dataset | Branch |
 |-------|------|-----------|-------------|---------|--------|
-| HRC (production) | [annoq-site-v2](#4a-annoq-site-v2) | React + TypeScript (Vite) | <https://annoq.org> | HRC r1.1 | `main` |
-| TOPMed (beta) | [annoq-site](#4b-annoq-site) | Angular 9 | <https://topmed.annoq.org> | TOPMed: Freeze 8 | TopMed branch |
+| HRC (production) | [annoq-site-v2](#4a-annoq-site-v2) | React + TypeScript (Vite) | <https://annoq.org> | HRC r1.1 | `main` (its default) |
+| TOPMed (beta) | [annoq-site](#4b-annoq-site) | Angular 9 | <https://topmed.annoq.org> | TOPMed: Freeze 8 | `issue-19-load-topmed` (deployed); `issue-78-add-hrc-mapping-info` in flight |
 
-Until the **TOPMed cutover** (switching topmed.annoq.org to annoq-site-v2), a stage-4 change
-generally has to be implemented **twice — once in each framework**. There is no shared branch to
-merge between the two repos.
+Until the **TOPMed cutover** — **in progress** under
+[annoq-site#78](https://github.com/USCbiostats/annoq-site/issues/78) on the issue-78 line, ending
+in a **single site serving TOPMed with HRC as a filter** — a stage-4 change generally has to be
+implemented **twice, once in each framework**. There is no shared branch to merge between the two
+repos.
 
 ---
 
@@ -181,16 +185,20 @@ the cutover.
 
 | Deployment | URL | Dataset | Branch | Talks to | Served by |
 |------------|-----|---------|--------|----------|-----------|
-| Production | <https://annoq.org> | **HRC r1.1** (Haplotype Reference Consortium) | `main` | `api-v2.annoq.org` → database instance A | **annoq-site-v2** (React) |
-| Beta | <https://topmed.annoq.org> | **TOPMed: Freeze 8** | TopMed branch | `api-v2.topmed.annoq.org` → database instance B | **annoq-site** (Angular 9) |
+| Production | <https://annoq.org> | **HRC r1.1** (Haplotype Reference Consortium) | `main` (annoq-site-v2's default) | `api-v2.annoq.org` → database instance A | **annoq-site-v2** (React) |
+| Beta | <https://topmed.annoq.org> | **TOPMed: Freeze 8** | `issue-19-load-topmed` deployed; `issue-78-add-hrc-mapping-info` in flight (default is `master`) | `api-v2.topmed.annoq.org` → database instance B | **annoq-site** (Angular 9) |
 
 Both deployments currently serve **SNP data only — no indels** — even though the upstream
 pipeline (data-builder → database) can process both SNVs and indels. The two stacks share the
 codebase's history but run on **separate infrastructure** (distinct api-v2 and database/ES
 instances) and are released independently, so they can carry different data/schema versions at
-any moment. The branch split extends across the stack — **data-builder and api-v2 each have a
-`main` line and a TopMed line**; stage 4 is split by **repo** instead (annoq-site-v2 for HRC,
-annoq-site for TOPMed).
+any moment. The split extends across the stack, but **not as a `TopMed` branch line** — that
+branch does not exist on any repo. HRC tracks each repo's **default branch** (`master` here and in
+data-builder / database / api-v2; `main` in annoq-site-v2) and TOPMed work lands on **named issue
+branches** — the **issue-19** line is deployed at topmed.annoq.org, the **issue-78** line is in
+flight (see
+[architecture.md](architecture.md#topmed-refs--what-topmedannoqorg-is-built-from)); stage 4 is additionally split by **repo** (annoq-site-v2 for HRC, annoq-site for
+TOPMed).
 
 **Gotchas:** Angular 9 is dated — mind Node/CLI version compatibility. Client types are
 codegen'd from the live/target GraphQL schema; regenerate after api-v2 changes. Keep the

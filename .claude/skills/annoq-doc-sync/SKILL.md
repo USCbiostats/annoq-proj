@@ -35,7 +35,8 @@ reverse. When docs disagree with the code, fix the docs (or file a bug if the co
 | Endpoint URLs | deployment config (HRC api `api-v2.annoq.org`; TOPMed api `api-v2.topmed.annoq.org`; dev `enrichment-dev.annoq.org`) |
 | Deployment URLs & datasets | deployment config / running sites (annoq.org → api-v2.annoq.org = HRC r1.1; topmed.annoq.org → api-v2.topmed.annoq.org = TOPMed Freeze 8) |
 | Which site repo serves which URL | the served HTML: React/Vite builds have `<div id="root">` + `/assets/index-*.js` (annoq-site-v2); Angular builds have `runtime.*.js`/`main.*.js` (annoq-site) |
-| Stack/branch structure | the repos' branches (data-builder / api-v2: `main` vs TopMed) + deployment/infra config. **Stage 4 is split by repo, not branch:** annoq-site-v2 = HRC, annoq-site = TOPMed |
+| Stack/branch structure | **`git ls-remote --heads`** on each repo (never prose) + deployment/infra config. There is **no `TopMed` branch**; defaults are `master` except annoq-site-v2 (`main`). **Stage 4 is split by repo, not ref:** annoq-site-v2 = HRC, annoq-site = TOPMed |
+| Deploy provenance (which ref a live site is built from) | the deploy config / whoever runs the release — **not** inferable from branch names. Confirmed: topmed.annoq.org = the **issue-19** line |
 | SNP-only vs indel data | the actual indexed dataset (currently SNP-only) |
 | Client capabilities | the client's own source (annoq-py, AnnoQR) |
 
@@ -62,7 +63,9 @@ When one of these changes, update **all** listed locations.
 | **Dataset versions (HRC r1.1 prod, TOPMed Freeze 8 beta)** | annoq-proj (README, architecture, pipeline, repositories, glossary); annoq-site README / branch docs |
 | **SNP-only vs indel status of deployed data** | annoq-proj (README, architecture, pipeline, glossary, repositories); annoq-site docs |
 | **Parallel-stack model (2 stacks: separate branches, api-v2 instances, database/ES instances)** | annoq-proj (README, architecture, pipeline, repositories, glossary); the skills (bugfix/feature/config); each stacked repo's branch docs |
-| **Branch lines (`main` = HRC, TopMed branch = TOPMed) across data-builder / api-v2 / site** | annoq-proj (README, architecture, repositories, glossary); each stacked repo's README |
+| **Per-stack code refs (HRC = default branch, `master`/`main`; TOPMed = issue branches, **no `TopMed` branch**)** | annoq-proj (README, architecture, pipeline, repositories, glossary, CLAUDE.md, bugfix/feature/config/data-build skills); each stacked repo's README/CLAUDE.md |
+| **TOPMed issue-19 line (deployed) vs issue-78 line (in flight)** | annoq-proj (README, architecture, pipeline, repositories, glossary, CLAUDE.md, bugfix/feature/config/data-build skills); annoq-site CLAUDE.md |
+| **TOPMed cutover = annoq-site#78 (umbrella, in progress); end state = a single site serving TOPMed with HRC as a filter (`Mapped_in_HRC`/`search_hrc`)** | annoq-proj (README, architecture, repositories, glossary, CLAUDE.md, feature/data-build skills); annoq-site CLAUDE.md; annoq-site-v2 README |
 
 If a fact isn't in this table but is restated in ≥2 repos, **add a row** — the map is meant to grow.
 
@@ -83,12 +86,14 @@ Search the hub and any checked-out sibling repos. Prefer the Grep tool; useful p
 - Versions/status: `Elasticsearch 8`, `Python 3\.1`, `Angular 9`, `React`, `Node 20`, `deprecated`, `unreleased`, `not released`, `superseded`, `cutover`
 - Successor language: `replace`, `succeed`, `successor`, `next-gen`, `rewrite`, `site-v2`
 - Deployments/datasets: `topmed\.annoq\.org`, `annoq\.org`, `HRC`, `r1\.1`, `TOPMed`, `Freeze 8`, `SNP`, `indel`
-- Stacks/branches: `stack`, `instance`, `TopMed branch`, `\bmain\b`, `parallel`, `split by stack`
+- Stacks/branches: `stack`, `instance`, `TopMed branch`, `\bmain\b`, `\bmaster\b`, `branch line`, `parallel`, `split by stack`
 - Stage-4 UI: `annoq-site\b`, `site-v2`, `4205`, `5173`, `ng serve`, `npm run dev`, `graphql_codegen`
 
 Search across repos, e.g.:
 ```
-grep -rniE '10,?000|20 field|api-v2\.annoq\.org|500\+' ../annoq-* ../AnnoQR ../Annoq_Overrepr_Workflow .
+# note: annoq-site-v2 may not be a sibling of the others — add its path explicitly
+grep -rniE '10,?000|20 field|api-v2\.annoq\.org|500\+' \
+  ../annoq-* ../AnnoQR ../Annoq_Overrepr_Workflow ../../annoq-site-v2 .
 ```
 List every hit before editing — the point of this skill is to catch the ones you'd otherwise miss.
 
@@ -103,8 +108,17 @@ List every hit before editing — the point of this skill is to catch the ones y
   - "**annoq-site-v2** is **released** — the production UI at **annoq.org (HRC r1.1)**"
   - "**annoq-site** (Angular 9) is **superseded on HRC but still the TOPMed beta UI** at
     **topmed.annoq.org**" — it is **not** deprecated
-  - "**Stage 4 is split by stack**" · "pending the **TOPMed cutover**"
+  - "**Stage 4 is split by stack**" · "pending the **TOPMed cutover**" (tracked by
+    **annoq-site#78**, the cutover umbrella — describe it as *in progress*, not planned)
   - "a stage-4 change lands in **both site repos** until the TOPMed cutover"
+  - "**no standing `TopMed` branch**" · "default branch (`master`; `main` in annoq-site-v2)" ·
+    "TOPMed **issue branches**" · "**issue-19 line** (deployed)" · "**issue-78 line** (in flight)"
+- **An issue's body is not its design.** annoq-site#78's body is a one-line January note that
+  misdescribes the actual end state; the implementation is authoritative. Ask the implementer
+  rather than quoting an issue body as the plan.
+- **Never restate a branch name from prose.** Branch facts drifted undetected for a long time here:
+  the docs claimed a `main`/`TopMed` branch line that never existed. Confirm with
+  `git ls-remote --heads https://github.com/USCbiostats/<repo>.git` before writing one down.
 
 ### 4. Verify
 - Re-run the searches from step 2 — confirm **no stale value remains**.

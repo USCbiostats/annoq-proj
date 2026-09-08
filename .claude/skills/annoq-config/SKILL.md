@@ -54,8 +54,12 @@ These affect more than one stage — changing them is effectively a cross-stage 
   (local / staging / prod) — the same key often has different values per environment.
 - **Confirm which deployment stack/instance** the config belongs to. The pipeline runs as two
   parallel stacks, each with its **own api-v2 instance and its own database/ES instance**:
-  - **HRC stack** — `main` branch, dataset HRC r1.1, annoq.org → API `api-v2.annoq.org`.
-  - **TOPMed stack** — TopMed branch, dataset TOPMed Freeze 8, topmed.annoq.org → API `api-v2.topmed.annoq.org`.
+  - **HRC stack** — each repo's **default branch** (`master`; `main` in annoq-site-v2), dataset
+    HRC r1.1, annoq.org → API `api-v2.annoq.org`.
+  - **TOPMed stack** — dataset TOPMed Freeze 8, topmed.annoq.org → API
+    `api-v2.topmed.annoq.org`. No `TopMed` branch exists: the **issue-19** line is deployed, the
+    **issue-78** line is in flight. A config change aimed at the *live* TOPMed site belongs on the
+    line it is deployed from.
   There are therefore **two api-v2 endpoints and two databases**. A config value (endpoint, index
   name, credentials) usually targets **one instance** — get the right one. If the change is a code
   default rather than a per-instance value, it likely applies to **both branches**. See

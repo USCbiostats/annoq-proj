@@ -46,8 +46,9 @@ feature**, and **updating a configuration** — across the component repositorie
 
 > **Stage 4 is split by stack.** **annoq-site-v2 (React) is released** and serves
 > **annoq.org (HRC r1.1)**. **annoq-site (Angular 9)** is **superseded on HRC but still the TOPMed
-> beta UI** at topmed.annoq.org. Until the **TOPMed cutover**, UI changes land in **both** site
-> repos — see below.
+> beta UI** at topmed.annoq.org. Until the **TOPMed cutover** — in progress under
+> [annoq-site#78](https://github.com/USCbiostats/annoq-site/issues/78), ending in a **single site
+> serving TOPMed with HRC as a filter** — UI changes land in **both** site repos. See below.
 
 Data flows **left → right** through the core pipeline; a set of **consumers** query the API.
 A change to a shared contract (a field, an ES mapping, the GraphQL schema) can ripple from the
@@ -76,28 +77,38 @@ work to the right stage(s) and repo.
 ### Parallel deployment stacks (HRC & TOPMed)
 
 The core pipeline is deployed as **two independent, parallel stacks** — one per dataset. Each
-stack has its **own branch line** across the code (data, api, site), its **own api-v2 instance**,
+stack has its **own code refs** across the pipeline (data, api, site), its **own api-v2 instance**,
 and its **own database/Elasticsearch instance**. They do not share running infrastructure.
 
+> **Branch reality check.** There is **no standing `TopMed` branch** on any AnnoQ repo. Default
+> branches are **`master`** for annoq-data-builder, annoq-database, annoq-api-v2 and annoq-site;
+> **`main`** only for annoq-site-v2. TOPMed runs on **named issue branches in two lines** — the
+> **issue-19** line is what topmed.annoq.org is deployed from, and the **issue-78** line carries
+> all post-release work (not yet deployed) — it is the **TOPMed-cutover** line, tracked by
+> [annoq-site#78](https://github.com/USCbiostats/annoq-site/issues/78). See
+> [architecture.md](docs/architecture.md#topmed-refs--what-topmedannoqorg-is-built-from) for the
+> per-repo refs. Confirm any ref before assuming a name:
+> `git ls-remote --heads https://github.com/USCbiostats/<repo>.git`
+
 ```
- HRC stack  (production, main branches)
+ HRC stack  (production, default branches)
    HRC r1.1 data ─▶ database/ES instance A ─▶ api-v2.annoq.org ─▶ annoq.org
                                                                   (annoq-site-v2, React)
 
- TOPMed stack  (beta, TopMed branches)
+ TOPMed stack  (beta, issue branches)
    TOPMed Freeze 8 ─▶ database/ES instance B ─▶ api-v2.topmed.annoq.org ─▶ topmed.annoq.org
                                                                            (annoq-site, Angular 9)
 ```
 
-| Stack | Dataset | Branch line | api-v2 endpoint | Database/ES instance | Site URL | Site repo | Status |
+| Stack | Dataset | Code refs | api-v2 endpoint | Database/ES instance | Site URL | Site repo | Status |
 |-------|---------|-------------|-----------------|----------------------|----------|-----------|--------|
-| **HRC** (production) | HRC r1.1 | `main` | [api-v2.annoq.org](https://api-v2.annoq.org) | instance A | [annoq.org](https://annoq.org) | **annoq-site-v2** (React) | Live |
-| **TOPMed** (beta) | TOPMed: Freeze 8 | TopMed branch | [api-v2.topmed.annoq.org](https://api-v2.topmed.annoq.org) | instance B | [topmed.annoq.org](https://topmed.annoq.org) | **annoq-site** (Angular 9) | Beta |
+| **HRC** (production) | HRC r1.1 | default branch (`master`; `main` in annoq-site-v2) | [api-v2.annoq.org](https://api-v2.annoq.org) | instance A | [annoq.org](https://annoq.org) | **annoq-site-v2** (React) | Live |
+| **TOPMed** (beta) | TOPMed: Freeze 8 | issue-19 line (deployed) · issue-78 line (in flight) | [api-v2.topmed.annoq.org](https://api-v2.topmed.annoq.org) | instance B | [topmed.annoq.org](https://topmed.annoq.org) | **annoq-site** (Angular 9) | Beta |
 
 Both stacks currently serve **SNP data only (no indels)**.
 
 > **Working implication:** a bug fix, feature, or config change frequently has to be applied to
-> **both branches** and validated against **both api-v2 instances**. Always establish *which
+> **both stacks' refs** and validated against **both api-v2 instances**. Always establish *which
 > stack* a report or task concerns first. Note that the two stacks now run **different UI
 > codebases** — a stage-4 change usually means editing **both site repos until the TOPMed
 > cutover**. See the skills in [`.claude/skills/`](.claude/skills/).

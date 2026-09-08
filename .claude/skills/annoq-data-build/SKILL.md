@@ -32,8 +32,23 @@ index, and (b) **generated metadata files** (`anno_tree.json`, `annoq_mappings.j
 ## Stack awareness (do this first)
 
 The pipeline runs as two parallel stacks (see `CLAUDE.md` / `docs/architecture.md`):
-- **HRC stack** — `main` branch, dataset HRC r1.1.
-- **TOPMed stack** — TopMed branch, dataset TOPMed Freeze 8.
+- **HRC stack** — each repo's **default branch** (`master`; `main` in annoq-site-v2), dataset
+  HRC r1.1.
+- **TOPMed stack** — dataset TOPMed Freeze 8, on a named **issue branch**.
+
+Defaults are `master` everywhere except `annoq-site-v2` (`main`). **TOPMed has two branch lines** — no `TopMed` branch exists:
+  - **issue-19 line** — `issue-19-load-topmed` (annoq-site) +
+    `annoq-site-19-add-update-metadata-for-top-med-data` (data-builder / database / api-v2).
+    **This is what topmed.annoq.org is deployed from.** (annoq-site#19, closed.)
+  - **issue-78 line** — `issue-78-add-hrc-mapping-info` (annoq-site) +
+    `annoq-site-78-add-hrc-mapping-info` (data-builder / database / api-v2). Updates since the
+    release; **not deployed yet.** (annoq-site#78, open.)
+
+The HRC-mapping columns this playbook adds (Part 2.1) are **issue-78 line** work — build them
+there, not on the deployed issue-19 line. (annoq-site#78 is the **TOPMed-cutover umbrella**,
+whose end state is a **single site serving TOPMed with HRC as a filter** — these columns are what
+make that possible, hence the branch name.) Verify refs with
+`git ls-remote --heads https://github.com/USCbiostats/<repo>.git`.
 
 The **HRC merge step is TOPMed-only** — it maps TOPMed hg38 variants back to HRC r1.1 and is
 meaningless on the HRC stack itself. Everything else applies to both. Both deployed datasets are

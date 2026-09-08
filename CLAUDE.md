@@ -43,15 +43,34 @@ When the task matches, invoke the skill rather than improvising:
 The pipeline is deployed **twice**. Each stack has its own branch, api-v2 instance, and
 database/ES instance. **Always establish which stack a task concerns first.**
 
-| Stack | Branch | Dataset | api-v2 | Site | Site repo |
-|-------|--------|---------|--------|------|-----------|
-| **HRC** (production) | `main` | HRC r1.1 | `https://api-v2.annoq.org` | annoq.org | `annoq-site-v2` (React) |
-| **TOPMed** (beta) | TopMed branch | TOPMed: Freeze 8 | `https://api-v2.topmed.annoq.org` | topmed.annoq.org | `annoq-site` (Angular 9) |
+| Stack | Code refs | Dataset | api-v2 | Site | Site repo |
+|-------|-----------|---------|--------|------|-----------|
+| **HRC** (production) | default branch (`master`; `main` in annoq-site-v2) | HRC r1.1 | `https://api-v2.annoq.org` | annoq.org | `annoq-site-v2` (React) |
+| **TOPMed** (beta) | issue-19 line (deployed) / issue-78 line (in flight) | TOPMed: Freeze 8 | `https://api-v2.topmed.annoq.org` | topmed.annoq.org | `annoq-site` (Angular 9) |
 
-- The branch split spans **data-builder, api-v2, and annoq-site**. The stage-4 split is by
-  **repo**, not branch: HRC is served by `annoq-site-v2` (`main`), TOPMed by `annoq-site`
-  (TopMed branch).
-- A dataset-agnostic code change usually must land on **both branches** and be re-indexed against
+**There is no standing `TopMed` branch** — don't look for one. Defaults are `master` everywhere
+except `annoq-site-v2` (`main`). TOPMed runs on **named issue branches in two lines**:
+
+| Line | data-builder / database / api-v2 | annoq-site | State |
+|------|----------------------------------|------------|-------|
+| **issue-19** (annoq-site#19, closed) | `annoq-site-19-add-update-metadata-for-top-med-data` | `issue-19-load-topmed` | **deployed** at topmed.annoq.org |
+| **issue-78** (annoq-site#78, open) | `annoq-site-78-add-hrc-mapping-info` | `issue-78-add-hrc-mapping-info` | **in flight**, not deployed |
+
+**annoq-site#78 is the TOPMed-cutover umbrella** ("Integrate TopMed website into Annoq.org"), so
+the issue-78 line *is* the cutover work line — the cutover is **in progress**. Its end state is a
+**single site serving TOPMed with HRC as a filter** (`Mapped_in_HRC=Y` via api-v2's
+`search_hrc`), so HRC stops being a separate deployment/dataset user-facing. The issue's one-line
+body is not the design — go by the implementation. New TOPMed work belongs on that line and should
+reference #78.
+
+So **what is live ≠ what is in flight**: topmed.annoq.org serves the issue-19 line. Establish which
+line a task concerns, not just which stack. Check refs with
+`git ls-remote --heads https://github.com/USCbiostats/<repo>.git`.
+
+- The stack split spans **data-builder, api-v2, and annoq-site**. The stage-4 split is by
+  **repo**, not ref: HRC is served by `annoq-site-v2` (`main`), TOPMed by `annoq-site` (a TOPMed
+  issue branch).
+- A dataset-agnostic code change usually must land on **both stacks' refs** and be re-indexed against
   **both** database instances. A per-instance config value targets **one** stack — get the right one.
 - The two api-v2/database instances are **separate** and may run different data/schema versions —
   never assume they're identical.

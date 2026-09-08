@@ -31,22 +31,44 @@ Domain and technical terms used across the AnnoQ pipeline.
 - **HRC r1.1** — Haplotype Reference Consortium reference panel, version r1.1; the dataset
   behind the **production** UI (**annoq-site-v2**, React) at annoq.org.
 - **TOPMed: Freeze 8** — the TOPMed program's Freeze 8 dataset; the dataset behind the **beta**
-  UI (**annoq-site**, Angular 9) at topmed.annoq.org (served from a TopMed branch of the
-  annoq-site codebase).
+  UI (**annoq-site**, Angular 9) at topmed.annoq.org (TOPMed work lands on issue branches of the
+  annoq-site codebase — there is no standing `TopMed` branch).
 - **Production deployment** — annoq.org (HRC r1.1), served by **annoq-site-v2**.
 - **Beta deployment** — topmed.annoq.org (TOPMed Freeze 8), served by **annoq-site**.
 - **SNP-only** — a property of the currently deployed datasets: they contain SNPs, not indels.
 - **Deployment stack** — a full vertical slice of the pipeline (data → database/ES → api-v2 →
   site) for one dataset, with its own code branch and its own running api-v2 and database/ES
-  instances. There are two: the **HRC stack** (production, `main`) and the **TOPMed stack**
-  (beta, TopMed branch). They run on separate infrastructure and can carry different versions.
-- **Branch line** — the per-stack branch that runs across multiple repos (data-builder, api-v2,
-  site): `main` for HRC, a TopMed branch for TOPMed.
+  instances. There are two: the **HRC stack** (production, default branches) and the **TOPMed
+  stack** (beta, issue branches). They run on separate infrastructure and can carry different
+  versions.
+- **Code refs (per stack)** — HRC tracks each repo's **default branch**: `master` in
+  annoq-data-builder / annoq-database / annoq-api-v2 / annoq-site, `main` in annoq-site-v2.
+  TOPMed has **no standing `TopMed` branch**; its work lands on **named issue branches** in two
+  lines (see [architecture.md](architecture.md#topmed-refs--what-topmedannoqorg-is-built-from)).
+  The older docs called this a "TopMed branch line"; that branch does not exist. Verify with
+  `git ls-remote --heads`.
+- **issue-19 line** — the TOPMed refs **topmed.annoq.org is deployed from**:
+  `issue-19-load-topmed` (annoq-site) + `annoq-site-19-add-update-metadata-for-top-med-data`
+  (data-builder / database / api-v2). Owning issue annoq-site#19 "Load TOPMed data to the
+  elasticsearch database" (closed).
+- **issue-78 line** — the TOPMed refs carrying all post-release work, **not yet deployed**:
+  `issue-78-add-hrc-mapping-info` (annoq-site) + `annoq-site-78-add-hrc-mapping-info`
+  (data-builder / database / api-v2). Owning issue annoq-site#78 "Integrate TopMed website into
+  Annoq.org" (open) — the **TOPMed-cutover umbrella**, so this is the **cutover work line**; the
+  HRC-mapping search is one task under it, which is why the branches carry that name.
 - **Stage-4 split** — the two stacks run **different UI codebases**: annoq-site-v2 (React) on
   annoq.org, annoq-site (Angular 9) on topmed.annoq.org. So a UI change is implemented twice,
-  in two frameworks, until the **TOPMed cutover**.
-- **TOPMed cutover** — the not-yet-done switch of topmed.annoq.org from annoq-site (Angular 9)
-  to annoq-site-v2 (React). Until it happens, stage 4 is split by stack.
+  in two frameworks, until the **TOPMed cutover** consolidates them onto one site.
+- **TOPMed cutover** — the consolidation tracked by
+  [annoq-site#78](https://github.com/USCbiostats/annoq-site/issues/78) "Integrate TopMed website
+  into Annoq.org" (open), the **umbrella issue** for the work. **End state (per the
+  implementation): a single site serving TOPMed with HRC as a filter** — not two sites, and not
+  two user-facing datasets. HRC stops being a separate deployment and becomes a
+  **filter over TOPMed** (`Mapped_in_HRC=Y`, exposed by api-v2's
+  `search_hrc` argument). It is **in progress, not planned**: the
+  [issue-78 line](architecture.md#topmed-refs--what-topmedannoqorg-is-built-from) *is* the cutover
+  work line. Note the issue's one-line body ("Maybe button to switch between websites") is an
+  initial January note, **not** the design — go by the implementation.
 
 ## Annotation tools & sources
 

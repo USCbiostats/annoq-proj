@@ -59,8 +59,18 @@ Decide which stages it touches:
   **shared contracts** move (ES mapping, `anno_tree.json`, GraphQL schema).
 - **Decide which stack(s) the feature targets.** The pipeline runs as two parallel stacks with
   separate branches, api-v2 instances, and database/ES instances:
-  - **HRC stack** — `main` branch, dataset HRC r1.1, annoq.org (API `api-v2.annoq.org`).
-  - **TOPMed stack** — TopMed branch, dataset TOPMed Freeze 8, topmed.annoq.org (API `api-v2.topmed.annoq.org`).
+  - **HRC stack** — each repo's **default branch** (`master`; `main` in annoq-site-v2), dataset
+    HRC r1.1, annoq.org (API `api-v2.annoq.org`).
+  - **TOPMed stack** — dataset TOPMed Freeze 8, topmed.annoq.org (API
+    `api-v2.topmed.annoq.org`). No `TopMed` branch exists; **build TOPMed features on the
+    issue-78 line** (`issue-78-add-hrc-mapping-info` / `annoq-site-78-add-hrc-mapping-info`),
+    which carries post-release work and is the **TOPMed-cutover** line (annoq-site#78 is the
+    cutover umbrella — reference it; its end state is a
+    single site serving TOPMed with HRC as a filter, so ask whether a new TOPMed feature should
+    assume that single-site model). The **issue-19** line
+    (`issue-19-load-topmed` / `annoq-site-19-add-update-metadata-for-top-med-data`) is what is
+    **deployed** — treat it as the released baseline, not a feature target. Verify refs with
+    `git ls-remote --heads`.
   Most code features belong on **both branches**; a dataset-specific feature may target one. State
   the choice, and plan the same change (and re-index) for each targeted stack independently. See
   `docs/architecture.md` → Parallel deployment stacks.
@@ -107,7 +117,7 @@ Work in data-flow order so each stage has what the next needs.
   deploy, or work in a repo that wasn't checked out).
 - Recommend the PR order (upstream repos merge/deploy first).
 - **State which stack(s)/branch(es) got the change** and which still need it — a code feature
-  usually lands on both `main` and the TopMed branch, each re-indexed against its own instance.
+  usually lands on **both stacks' refs**, each re-indexed against its own instance.
 - **If the feature changed a shared contract** (new/renamed field, api-v2 schema, annotation
   tree, limits, or a repo's status), run **`/annoq-doc-sync`** to update the docs in every repo
   that restates it — including consumer READMEs and the hub docs.
@@ -121,5 +131,5 @@ Work in data-flow order so each stage has what the next needs.
 - Building a UI feature in only one site repo — annoq.org (annoq-site-v2) and topmed.annoq.org
   (annoq-site) are separate codebases until the TOPMed cutover.
 - Skipping the re-index step — new mappings don't apply to already-indexed documents.
-- Landing a code feature on one branch/stack only when it should be on both (`main` + TopMed),
+- Landing a code feature on one ref/stack only when it should be on both,
   or forgetting to re-index the second stack's database instance.
