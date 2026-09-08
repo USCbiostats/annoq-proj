@@ -14,7 +14,7 @@ labels: enhancement
 ## Feature kind
 - [ ] New annotation field / source (spans all stages 1→4)
 - [ ] New query / filter / aggregation over existing data (stage 3, maybe 2 & 4)
-- [ ] Search / UX capability over existing API (stage 4)
+- [ ] Search / UX capability over existing API (stage 4 — usually **both** site repos)
 - [ ] Performance / indexing capability (stage 2, maybe 1)
 - [ ] Expose an already-indexed field (stages 3→4)
 
@@ -22,11 +22,11 @@ labels: enhancement
 - [ ] Stage 1 — annoq-data-builder
 - [ ] Stage 2 — annoq-database
 - [ ] Stage 3 — annoq-api-v2
-- [ ] Stage 4 — annoq-site
+- [ ] Stage 4 — annoq-site-v2 (React — annoq.org / HRC)
+- [ ] Stage 4 — annoq-site (Angular 9 — topmed.annoq.org / TOPMed)
 - [ ] Consumer — annoq-py (Python client)
 - [ ] Consumer — AnnoQR (R client)
 - [ ] Consumer — Annoq_Overrepr_Workflow / SNPWay
-- [ ] Consumer — annoq-site-v2 (React, unreleased)
 
 ## Shared contracts touched
 <!-- Does this move a field name, ES mapping, the annotation tree, or the GraphQL schema? -->

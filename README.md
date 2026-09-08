@@ -10,8 +10,10 @@ playbooks) for the three most common kinds of work — **fixing a bug**, **imple
 feature**, and **updating a configuration** — across the component repositories.
 
 > **Live services:**
-> UI (production, HRC r1.1) → <https://annoq.org> (API <https://api-v2.annoq.org>) ·
-> UI (beta, TOPMed Freeze 8) → <https://topmed.annoq.org> (API <https://api-v2.topmed.annoq.org>) ·
+> UI (production, HRC r1.1) → <https://annoq.org> — **annoq-site-v2** (React)
+> (API <https://api-v2.annoq.org>) ·
+> UI (beta, TOPMed Freeze 8) → <https://topmed.annoq.org> — **annoq-site** (Angular 9)
+> (API <https://api-v2.topmed.annoq.org>) ·
 > SNPWay overrepresentation → <https://snpway.annoq.org>
 >
 > **Data note:** the deployed datasets currently contain **SNPs only (no indels)**, even though
@@ -22,25 +24,30 @@ feature**, and **updating a configuration** — across the component repositorie
 ## The core pipeline at a glance
 
 ```
-┌────────────────────┐   JSON +    ┌────────────────────┐    ES     ┌────────────────────┐   GraphQL  ┌────────────────────┐
-│ annoq-data-builder │  ES mappings│  annoq-database    │  indices  │   annoq-api-v2     │    query   │    annoq-site      │
-│                    │────────────▶│                    │──────────▶│                    │───────────▶│                    │
-│ Build annotations: │             │ VCF/TSV → JSON,    │           │ FastAPI +          │            │ Angular 9 web UI   │
-│ WGSA (ANNOVAR/VEP/ │             │ bulk-index into    │           │ Strawberry GraphQL │            │ (TypeScript/SCSS)  │
-│ SnpEff) + PANTHER  │             │ Elasticsearch 8.5  │           │ over 500+ attrs    │            │                    │
-│ (Shell/Java/Py)    │             │ (Python/Bash)      │           │ (Python 3.11)      │            │                    │
-└────────────────────┘             └────────────────────┘           └─────────┬──────────┘            └────────────────────┘
-    HPC / SLURM                       ES cluster + Kibana                      │ api-v2.annoq.org           annoq.org
+┌────────────────────┐   JSON +    ┌────────────────────┐    ES     ┌────────────────────┐   GraphQL  ┌──────────────────────┐
+│ annoq-data-builder │  ES mappings│  annoq-database    │  indices  │   annoq-api-v2     │    query   │  Stage 4 — web UI    │
+│                    │────────────▶│                    │──────────▶│                    │───────────▶│  (split by stack)    │
+│ Build annotations: │             │ VCF/TSV → JSON,    │           │ FastAPI +          │            │ annoq-site-v2 React  │
+│ WGSA (ANNOVAR/VEP/ │             │ bulk-index into    │           │ Strawberry GraphQL │            │   → annoq.org (HRC)  │
+│ SnpEff) + PANTHER  │             │ Elasticsearch 8.5  │           │ over 500+ attrs    │            │ annoq-site Angular 9 │
+│ (Shell/Java/Py)    │             │ (Python/Bash)      │           │ (Python 3.11)      │            │   → topmed.annoq.org │
+└────────────────────┘             └────────────────────┘           └─────────┬──────────┘            └──────────────────────┘
+    HPC / SLURM                       ES cluster + Kibana                      │ api-v2.annoq.org
                                                                                │
-                     ┌──────────────────────────┬────────────────────────────┼───────────────────────────┐
-                     ▼                           ▼                            ▼                           ▼
-              ┌─────────────┐            ┌─────────────┐            ┌────────────────────┐       ┌──────────────────┐
-              │  annoq-py   │            │   AnnoQR    │            │ Annoq_Overrepr_    │       │  annoq-site-v2   │
-              │ Python      │            │ R package   │            │ Workflow (SNPWay)  │       │ React (next-gen  │
-              │ client lib  │            │ client lib  │            │ snpway.annoq.org   │       │ UI, unreleased)  │
-              └─────────────┘            └─────────────┘            └────────────────────┘       └──────────────────┘
-                                       API consumers / clients (all query api-v2)
+                          ┌────────────────────────────┬──────────────────────┴┐
+                          ▼                            ▼                        ▼
+                   ┌─────────────┐            ┌─────────────┐        ┌────────────────────┐
+                   │  annoq-py   │            │   AnnoQR    │        │ Annoq_Overrepr_    │
+                   │ Python      │            │ R package   │        │ Workflow (SNPWay)  │
+                   │ client lib  │            │ client lib  │        │ snpway.annoq.org   │
+                   └─────────────┘            └─────────────┘        └────────────────────┘
+                            API consumers / clients (all query api-v2)
 ```
+
+> **Stage 4 is split by stack.** **annoq-site-v2 (React) is released** and serves
+> **annoq.org (HRC r1.1)**. **annoq-site (Angular 9)** is **superseded on HRC but still the TOPMed
+> beta UI** at topmed.annoq.org. Until the **TOPMed cutover**, UI changes land in **both** site
+> repos — see below.
 
 Data flows **left → right** through the core pipeline; a set of **consumers** query the API.
 A change to a shared contract (a field, an ES mapping, the GraphQL schema) can ripple from the
@@ -56,7 +63,15 @@ work to the right stage(s) and repo.
 | 1 | [annoq-data-builder](https://github.com/USCbiostats/annoq-data-builder) | Build annotation data (WGSA + PANTHER/enhancer); emit JSON & ES mappings | Shell, Java, Python, SLURM |
 | 2 | [annoq-database](https://github.com/USCbiostats/annoq-database) | Convert VCF/TSV → JSON, create indices, bulk-load Elasticsearch | Python, Bash, Elasticsearch 8.5, Kibana |
 | 3 | [annoq-api-v2](https://github.com/USCbiostats/annoq-api-v2) | **Current API** — GraphQL query layer over Elasticsearch (dynamic types) | Python 3.11, FastAPI, Strawberry, Docker |
-| 4 | [annoq-site](https://github.com/USCbiostats/annoq-site) | **Current UI** consuming the API | Angular 9, TypeScript, SCSS |
+| 4 (HRC) | [annoq-site-v2](https://github.com/USCbiostats/annoq-site-v2) | **Production UI** at annoq.org, consuming the API | React + TypeScript, Vite/Vitest, Node 20+ |
+| 4 (TOPMed) | [annoq-site](https://github.com/USCbiostats/annoq-site) | **TOPMed beta UI** at topmed.annoq.org; superseded on HRC | Angular 9, TypeScript, SCSS |
+
+> **Stage 4 is split by stack.** [annoq-site-v2](https://github.com/USCbiostats/annoq-site-v2) —
+> a **React + TypeScript** app (Vite/Vitest, no Angular) — is **released** and is the production
+> UI at **annoq.org (HRC r1.1)**. [annoq-site](https://github.com/USCbiostats/annoq-site)
+> (Angular 9) is **superseded on HRC but still the TOPMed beta UI** at **topmed.annoq.org**.
+> Until the **TOPMed cutover**, stage-4 work lands in **both site repos** so the two stacks
+> behave the same.
 
 ### Parallel deployment stacks (HRC & TOPMed)
 
@@ -67,21 +82,25 @@ and its **own database/Elasticsearch instance**. They do not share running infra
 ```
  HRC stack  (production, main branches)
    HRC r1.1 data ─▶ database/ES instance A ─▶ api-v2.annoq.org ─▶ annoq.org
+                                                                  (annoq-site-v2, React)
 
  TOPMed stack  (beta, TopMed branches)
    TOPMed Freeze 8 ─▶ database/ES instance B ─▶ api-v2.topmed.annoq.org ─▶ topmed.annoq.org
+                                                                           (annoq-site, Angular 9)
 ```
 
-| Stack | Dataset | Branch line | api-v2 endpoint | Database/ES instance | Site URL | Status |
-|-------|---------|-------------|-----------------|----------------------|----------|--------|
-| **HRC** (production) | HRC r1.1 | `main` | [api-v2.annoq.org](https://api-v2.annoq.org) | instance A | [annoq.org](https://annoq.org) | Live |
-| **TOPMed** (beta) | TOPMed: Freeze 8 | TopMed branch | [api-v2.topmed.annoq.org](https://api-v2.topmed.annoq.org) | instance B | [topmed.annoq.org](https://topmed.annoq.org) | Beta |
+| Stack | Dataset | Branch line | api-v2 endpoint | Database/ES instance | Site URL | Site repo | Status |
+|-------|---------|-------------|-----------------|----------------------|----------|-----------|--------|
+| **HRC** (production) | HRC r1.1 | `main` | [api-v2.annoq.org](https://api-v2.annoq.org) | instance A | [annoq.org](https://annoq.org) | **annoq-site-v2** (React) | Live |
+| **TOPMed** (beta) | TOPMed: Freeze 8 | TopMed branch | [api-v2.topmed.annoq.org](https://api-v2.topmed.annoq.org) | instance B | [topmed.annoq.org](https://topmed.annoq.org) | **annoq-site** (Angular 9) | Beta |
 
 Both stacks currently serve **SNP data only (no indels)**.
 
 > **Working implication:** a bug fix, feature, or config change frequently has to be applied to
 > **both branches** and validated against **both api-v2 instances**. Always establish *which
-> stack* a report or task concerns first. See the skills in [`.claude/skills/`](.claude/skills/).
+> stack* a report or task concerns first. Note that the two stacks now run **different UI
+> codebases** — a stage-4 change usually means editing **both site repos until the TOPMed
+> cutover**. See the skills in [`.claude/skills/`](.claude/skills/).
 
 ### API (historical)
 
@@ -96,7 +115,9 @@ Both stacks currently serve **SNP data only (no indels)**.
 | [annoq-py](https://github.com/USCbiostats/annoq-py) | Released | Python client library for the AnnoQ API + SNPWay workflows | Python 3.7+ |
 | [AnnoQR](https://github.com/USCbiostats/AnnoQR) | Released | R client package for the AnnoQ API + SNPWay workflows | R 3.5+ (`httr`, `jsonlite`) |
 | [Annoq_Overrepr_Workflow](https://github.com/USCbiostats/Annoq_Overrepr_Workflow) | Released → [snpway.annoq.org](https://snpway.annoq.org) | SNPWay: SNP→gene mapping + PANTHER overrepresentation analysis; **uses api-v2** (GraphQL + download) | FastAPI (Python) + React/Vite frontend |
-| [annoq-site-v2](https://github.com/USCbiostats/annoq-site-v2) | 🚧 **Not released** (early dev) | Next-generation web UI, intended to succeed annoq-site | React + TypeScript, Vite/Vitest |
+
+Both **stage-4 site repos** (annoq-site-v2, annoq-site) are also api-v2 consumers; they are listed
+under the core pipeline above rather than here.
 
 Full details on every repo: [`docs/repositories.md`](docs/repositories.md).
 
@@ -130,11 +151,11 @@ annoq/
 ├── annoq-data-builder/         # core pipeline
 ├── annoq-database/
 ├── annoq-api-v2/
-├── annoq-site/
+├── annoq-site/                 # stage 4 — TOPMed beta UI (Angular 9)
 ├── annoq-py/                   # clients / consumers
 ├── AnnoQR/
 ├── Annoq_Overrepr_Workflow/    # SNPWay
-└── annoq-site-v2/              # next-gen UI (unreleased)
+└── annoq-site-v2/              # stage 4 — HRC production UI (React)
 ```
 
 Clone the ones you need:

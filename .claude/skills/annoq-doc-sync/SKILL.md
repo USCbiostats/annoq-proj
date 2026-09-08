@@ -34,7 +34,8 @@ reverse. When docs disagree with the code, fix the docs (or file a bug if the co
 | Elasticsearch mappings / field names | `annoq_mappings.json` (data-builder → database) |
 | Endpoint URLs | deployment config (HRC api `api-v2.annoq.org`; TOPMed api `api-v2.topmed.annoq.org`; dev `enrichment-dev.annoq.org`) |
 | Deployment URLs & datasets | deployment config / running sites (annoq.org → api-v2.annoq.org = HRC r1.1; topmed.annoq.org → api-v2.topmed.annoq.org = TOPMed Freeze 8) |
-| Stack/branch structure | the repos' branches (data-builder / api-v2 / site: `main` vs TopMed) + deployment/infra config |
+| Which site repo serves which URL | the served HTML: React/Vite builds have `<div id="root">` + `/assets/index-*.js` (annoq-site-v2); Angular builds have `runtime.*.js`/`main.*.js` (annoq-site) |
+| Stack/branch structure | the repos' branches (data-builder / api-v2: `main` vs TopMed) + deployment/infra config. **Stage 4 is split by repo, not branch:** annoq-site-v2 = HRC, annoq-site = TOPMed |
 | SNP-only vs indel data | the actual indexed dataset (currently SNP-only) |
 | Client capabilities | the client's own source (annoq-py, AnnoQR) |
 
@@ -51,7 +52,11 @@ When one of these changes, update **all** listed locations.
 | **Query modes (chrom region / RSID / gene / VCF)** | annoq-proj (glossary, repositories); annoq-py README; AnnoQR README; site help |
 | **Annotation tree / categories** | api-v2 `data/`; annoq-proj (architecture); site UI + integrated docs |
 | **ES field names / mappings** | data-builder & database READMEs; api-v2 (generated); annoq-proj (architecture) |
-| **Repo status (deprecated / unreleased)** | annoq-proj (README, repositories, glossary); the repo's own README |
+| **Repo status (deprecated / unreleased / released)** | annoq-proj (README, repositories, glossary, CLAUDE.md); the repo's own README/CLAUDE.md; `.github/ISSUE_TEMPLATE/*` |
+| **Successor relationships (annoq-api → annoq-api-v2; annoq-site → annoq-site-v2)** | annoq-proj (README, architecture, repositories, glossary, CLAUDE.md, the bugfix/feature/config/data-build skills, `.github/ISSUE_TEMPLATE/*`); the predecessor repo's README/CLAUDE.md; the successor repo's README |
+| **Stage-4 split by stack (annoq-site-v2 = HRC/annoq.org; annoq-site = TOPMed/topmed.annoq.org)** | annoq-proj (README, architecture, pipeline, repositories, glossary, CLAUDE.md, all four other skills, `.github/ISSUE_TEMPLATE/*`); annoq-site README/CLAUDE.md; annoq-site-v2 README; annoq-api-v2 README (its "Downstream" section) |
+| **Local UI dev ports / build commands (5173 + `npm run dev`; 4205 + `ng serve`)** | annoq-proj (architecture, pipeline, config skill); each site repo's README |
+| **`panther_terms.json` distribution targets** | annoq-proj (data-build skill); annoq-data-builder README; both site repos |
 | **Stack/version facts (ES 8.5, Python 3.11, Angular 9, React)** | annoq-proj (repositories, glossary); each repo's README |
 | **Deployment URLs (annoq.org, topmed.annoq.org, snpway.annoq.org)** | annoq-proj (README, architecture, pipeline, repositories); annoq-site README; SNPWay README |
 | **Dataset versions (HRC r1.1 prod, TOPMed Freeze 8 beta)** | annoq-proj (README, architecture, pipeline, repositories, glossary); annoq-site README / branch docs |
@@ -75,9 +80,11 @@ Search the hub and any checked-out sibling repos. Prefer the Grep tool; useful p
 - Limits: `10,?000`, `\b20\b.*field`, `pagination`, `field.*(max|limit)`
 - Attribute count: `500\+?`, `attributes`
 - Query modes / domain: `RSID`, `chromosome`, `\bgene\b`, `VCF`
-- Versions/status: `Elasticsearch 8`, `Python 3\.1`, `Angular 9`, `React`, `deprecated`, `unreleased`, `not released`
+- Versions/status: `Elasticsearch 8`, `Python 3\.1`, `Angular 9`, `React`, `Node 20`, `deprecated`, `unreleased`, `not released`, `superseded`, `cutover`
+- Successor language: `replace`, `succeed`, `successor`, `next-gen`, `rewrite`, `site-v2`
 - Deployments/datasets: `topmed\.annoq\.org`, `annoq\.org`, `HRC`, `r1\.1`, `TOPMed`, `Freeze 8`, `SNP`, `indel`
-- Stacks/branches: `stack`, `instance`, `TopMed branch`, `\bmain\b`, `parallel`
+- Stacks/branches: `stack`, `instance`, `TopMed branch`, `\bmain\b`, `parallel`, `split by stack`
+- Stage-4 UI: `annoq-site\b`, `site-v2`, `4205`, `5173`, `ng serve`, `npm run dev`, `graphql_codegen`
 
 Search across repos, e.g.:
 ```
@@ -92,6 +99,12 @@ List every hit before editing — the point of this skill is to catch the ones y
 - Update this skill's fact→location map if a fact gained or lost a documentation site.
 - Fix cross-references and links if a repo's status changed (e.g. when annoq-site-v2 is released,
   update "not released" notes and successor language in annoq-proj + both site READMEs).
+- **Canonical phrasings currently in force** (reuse verbatim so greps keep working):
+  - "**annoq-site-v2** is **released** — the production UI at **annoq.org (HRC r1.1)**"
+  - "**annoq-site** (Angular 9) is **superseded on HRC but still the TOPMed beta UI** at
+    **topmed.annoq.org**" — it is **not** deprecated
+  - "**Stage 4 is split by stack**" · "pending the **TOPMed cutover**"
+  - "a stage-4 change lands in **both site repos** until the TOPMed cutover"
 
 ### 4. Verify
 - Re-run the searches from step 2 — confirm **no stale value remains**.

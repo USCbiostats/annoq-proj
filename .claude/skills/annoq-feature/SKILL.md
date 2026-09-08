@@ -19,7 +19,13 @@ This playbook plans the cross-repo work and sequences it correctly (upstream →
 | 1 build | annoq-data-builder | annotation content, ES mappings, tree/pickle artifacts |
 | 2 index | annoq-database | conversion → JSON, ES index creation + bulk load |
 | 3 API | **annoq-api-v2** (current) | GraphQL schema (generated), resolvers, FastAPI service |
-| 4 UI | annoq-site | Angular 9 components, GraphQL client queries, rendering |
+| 4 UI (HRC) | **annoq-site-v2** | React components (Vite), GraphQL client queries, rendering — serves annoq.org |
+| 4 UI (TOPMed) | **annoq-site** | Angular 9 components, GraphQL client queries, rendering — serves topmed.annoq.org |
+
+> **Stage 4 is split by stack.** `annoq-site-v2` (React) is **released** and serves
+> **annoq.org (HRC)**; `annoq-site` (Angular 9) is **superseded on HRC but still the TOPMed beta
+> UI** at **topmed.annoq.org**. A UI feature meant for both stacks has to be built **twice, in two
+> frameworks**, until the **TOPMed cutover** — budget for that when scoping.
 
 **API consumers** (build features here when the work is client- or workflow-facing):
 
@@ -28,7 +34,6 @@ This playbook plans the cross-repo work and sequences it correctly (upstream →
 | Python client | annoq-py | New programmatic query/helper for Python users |
 | R client | AnnoQR | New programmatic query/helper for R users |
 | SNPWay app | Annoq_Overrepr_Workflow | New overrepresentation/enrichment capability (snpway.annoq.org) |
-| Next-gen UI | annoq-site-v2 (React, unreleased) | UI features targeting the future frontend |
 
 > Target **annoq-api-v2**, not the deprecated **annoq-api**, for any API-layer feature.
 > A new client-facing query capability usually means api-v2 (3) **and** the relevant
@@ -43,7 +48,7 @@ Decide which stages it touches:
 |--------------|----------------|
 | New annotation field/source | 1 → 2 → 3 → 4 (all), + consumers if client-facing |
 | New query/filter/aggregation over existing data | 3 (resolvers) → 4 (UI), sometimes 2 (mapping/analyzer) |
-| Search/UX capability over existing API | 4 only (or annoq-site-v2) |
+| Search/UX capability over existing API | 4 only — annoq-site-v2 (HRC) and/or annoq-site (TOPMed) |
 | Performance/indexing capability | 2 (and maybe 1) |
 | Expose an already-indexed field | 3 → 4 (+ annoq-py / AnnoQR if clients should surface it) |
 | New programmatic client capability | annoq-py and/or AnnoQR (+ 3 if the API lacks the query) |
@@ -61,6 +66,9 @@ Decide which stages it touches:
   `docs/architecture.md` → Parallel deployment stacks.
 - For anything non-trivial, present the plan to the user before implementing. Note repos/branches
   that aren't checked out and will need follow-up.
+- When creating branches across repos, follow the naming/commit convention in `CLAUDE.md` →
+  **Branch & commit naming**: owning repo `issue-<num>-<desc>` / `For #<num>`; other repos
+  `<owning-repo>-<num>-<desc>` / `For #USCbiostats/<owning-repo>/issues/<num>`.
 
 ### 3. Implement upstream → downstream
 Work in data-flow order so each stage has what the next needs.
@@ -73,14 +81,19 @@ Work in data-flow order so each stage has what the next needs.
 - **Stage 3 (api-v2):** regenerate GraphQL types from the new ES schema
   (`scripts/class_generators/`, `datamodel-codegen`); add/adjust resolvers; update `data/`
   tree config if the annotation tree changed. Add `pytest` coverage.
-- **Stage 4 (site):** run GraphQL codegen (`graphql_codegen.ts`), add/extend the query and the
-  Angular component to display/filter the field. Update integrated docs if user-facing.
+- **Stage 4 (site) — do this per stack:**
+  - **annoq-site-v2 (HRC, annoq.org):** `npm run graphql_codegen` (**before** `npm run build` —
+    its typecheck reads `src/generated/graphql.ts`), then add/extend the query and the React
+    component. Endpoint/dataset in `src/lib/environment.ts` or `VITE_ANNOQ_API_V2`.
+  - **annoq-site (TOPMed, topmed.annoq.org):** `npm run graphql_codegen`, then the Angular
+    component. Update the integrated docs if user-facing.
 - **Consumers (if client-facing):** surface the capability in `annoq-py` / `AnnoQR` (mind the
   API limits — 10k pagination / 20 fields) and/or `Annoq_Overrepr_Workflow` (SNPWay). These
   depend on the api-v2 contract, so they come after stage 3 is settled.
 
 ### 4. Test each stage and the seam between stages
-- Unit/integration test within each repo (pytest for api-v2, e2e for site).
+- Unit/integration test within each repo (pytest for api-v2; Vitest in annoq-site-v2, e2e in
+  annoq-site).
 - **Test the seams:** does api-v2 actually return the new field from a real ES query? Does the
   site render what api-v2 returns? Verify in the GraphQL playground between stages 3 and 4.
 
@@ -103,7 +116,10 @@ Work in data-flow order so each stage has what the next needs.
 - Coding downstream before upstream — the field won't exist to expose yet.
 - Renaming a field in one stage but not the shared artifacts — silently breaks the contract.
 - Forgetting to regenerate GraphQL types after an ES mapping change (api-v2 types are generated).
-- Forgetting client codegen in the site after an api-v2 schema change.
+- Forgetting client codegen in the site after an api-v2 schema change (in annoq-site-v2 this also
+  breaks the build, whose typecheck depends on the generated types).
+- Building a UI feature in only one site repo — annoq.org (annoq-site-v2) and topmed.annoq.org
+  (annoq-site) are separate codebases until the TOPMed cutover.
 - Skipping the re-index step — new mappings don't apply to already-indexed documents.
 - Landing a code feature on one branch/stack only when it should be on both (`main` + TopMed),
   or forgetting to re-index the second stack's database instance.

@@ -29,18 +29,24 @@ Domain and technical terms used across the AnnoQ pipeline.
 ## Datasets & deployments
 
 - **HRC r1.1** — Haplotype Reference Consortium reference panel, version r1.1; the dataset
-  behind the **production** annoq-site at annoq.org.
+  behind the **production** UI (**annoq-site-v2**, React) at annoq.org.
 - **TOPMed: Freeze 8** — the TOPMed program's Freeze 8 dataset; the dataset behind the **beta**
-  annoq-site at topmed.annoq.org (served from a TopMed branch of the annoq-site codebase).
-- **Production deployment** — annoq.org (HRC r1.1).
-- **Beta deployment** — topmed.annoq.org (TOPMed Freeze 8).
+  UI (**annoq-site**, Angular 9) at topmed.annoq.org (served from a TopMed branch of the
+  annoq-site codebase).
+- **Production deployment** — annoq.org (HRC r1.1), served by **annoq-site-v2**.
+- **Beta deployment** — topmed.annoq.org (TOPMed Freeze 8), served by **annoq-site**.
 - **SNP-only** — a property of the currently deployed datasets: they contain SNPs, not indels.
 - **Deployment stack** — a full vertical slice of the pipeline (data → database/ES → api-v2 →
   site) for one dataset, with its own code branch and its own running api-v2 and database/ES
   instances. There are two: the **HRC stack** (production, `main`) and the **TOPMed stack**
   (beta, TopMed branch). They run on separate infrastructure and can carry different versions.
 - **Branch line** — the per-stack branch that runs across multiple repos (data-builder, api-v2,
-  annoq-site): `main` for HRC, a TopMed branch for TOPMed.
+  site): `main` for HRC, a TopMed branch for TOPMed.
+- **Stage-4 split** — the two stacks run **different UI codebases**: annoq-site-v2 (React) on
+  annoq.org, annoq-site (Angular 9) on topmed.annoq.org. So a UI change is implemented twice,
+  in two frameworks, until the **TOPMed cutover**.
+- **TOPMed cutover** — the not-yet-done switch of topmed.annoq.org from annoq-site (Angular 9)
+  to annoq-site-v2 (React). Until it happens, stage 4 is split by stack.
 
 ## Annotation tools & sources
 
@@ -68,8 +74,13 @@ Domain and technical terms used across the AnnoQ pipeline.
 - **GraphQL** — the query language/protocol exposed by api-v2 and consumed by the site.
 - **datamodel-codegen** — generates Python models from schema; used to dynamically build the
   500+ GraphQL types.
-- **graphql_codegen.ts** — generates typed GraphQL client operations for the Angular site.
-- **Angular 9** — the frontend framework for annoq-site.
+- **graphql_codegen.ts** — generates typed GraphQL client operations against the api-v2 schema;
+  used by both stage-4 site repos (`npm run graphql_codegen`).
+- **Angular 9** — the frontend framework for annoq-site, the **TOPMed beta UI**.
+- **React** — the frontend framework for **annoq-site-v2**, the **HRC production UI** at annoq.org
+  (built with Vite, tested with Vitest, Node 20+); also used by the SNPWay frontend.
+- **Vite** — the build/dev tooling for annoq-site-v2 (`npm run dev` on port 5173); dataset and API
+  endpoint come from `src/lib/environment.ts`, overridable via `VITE_ANNOQ_API_V2`.
 - **Docker / Docker Compose** — containerization for api-v2 local/prod deployment.
 
 ## Repositories & shorthand
@@ -78,11 +89,15 @@ Core pipeline:
 - **Stage 1 / build** — annoq-data-builder
 - **Stage 2 / index** — annoq-database
 - **Stage 3 / API** — annoq-api-v2 (current API)
-- **Stage 4 / UI** — annoq-site (current UI, Angular 9)
+- **Stage 4 / UI** — **split by stack:** annoq-site-v2 (React) on annoq.org (HRC);
+  annoq-site (Angular 9) on topmed.annoq.org (TOPMed)
 
 Other repos:
 - **annoq-api** — original Flask/REST API; **deprecated**, replaced by annoq-api-v2.
 - **annoq-py** — Python client library for the API + SNPWay.
 - **AnnoQR** — R client package for the API + SNPWay.
 - **Annoq_Overrepr_Workflow** — the SNPWay app (snpway.annoq.org), uses api-v2.
-- **annoq-site-v2** — React rewrite of the UI; **not yet released**.
+- **annoq-site-v2** — React + TypeScript rewrite of the UI; **released** and serving
+  **annoq.org (HRC r1.1)** as stage 4.
+- **annoq-site** — Angular 9 UI; **superseded on HRC but still the TOPMed beta UI** at
+  topmed.annoq.org, pending the TOPMed cutover.
