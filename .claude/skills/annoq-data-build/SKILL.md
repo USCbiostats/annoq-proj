@@ -101,13 +101,17 @@ Register these in the annotation tree (below): `chr_pos` under basic info (node 
 HRC/HG19 fields under **HG19 Info** (node `700`).
 
 ### Part 3 — generate and distribute the metadata/mapping files
-1. Update `annoq-site/metadata/annotation_tree.csv` for any metadata changes (**still the
-   authoritative copy** — see "Pending: annotation_tree.csv is moving to annoq-site-v2" below),
+1. Update the annotation-tree CSV for any metadata changes. Until the switchover it lives in
+   **both site repos** — update `annoq-site/metadata/annotation_tree.csv` (**still the
+   authoritative copy** — see "Pending: annotation_tree.csv is moving to annoq-site-v2" below)
+   **and** `annoq-site-v2/metadata/annotation_tree.csv`, keeping the two identical —
    **including the HRC
    fields** (`Mapped_in_HRC`, `HRC_chr_pos`, `HRC_chr_pos_ref_alt` under HG19 Info; `chr_pos` under
    basic info). `tools/gen_col_update_info.py` can help track column changes. This CSV is the
    **hand-maintained source of truth**.
-2. Generate the tree + ES mappings + api-v2 mapping (Part 3.1):
+2. Generate the tree + ES mappings + api-v2 mapping (Part 3.1). Both generators take **one**
+   input CSV: pass the authoritative `annoq-site` copy until the switchover — the
+   `annoq-site-v2/metadata/annotation_tree.csv` replica becomes the input at phase 2:
    ```
    python3 -m tools.annotation_tree_gen \
      --input_csv        /path/to/annoq-site/metadata/annotation_tree.csv \
@@ -167,7 +171,8 @@ Then run **`/annoq-doc-sync`** — the path is a documented shared value.
 > hosting it there needs no site-v2 code change.
 
 ## Gotchas
-- **DO NOT** overwrite `annoq-site/metadata/annotation_tree.csv` with the `--output_csv`
+- **DO NOT** overwrite `annoq-site/metadata/annotation_tree.csv` (or its
+  `annoq-site-v2/metadata/annotation_tree.csv` replica) with the `--output_csv`
   (`/do/not/use/annotation_tree_output.csv`) — some fields get lost. The CSV is the source; the
   `output_csv` is throwaway (that's why the path is `/do/not/use/`).
 - **DO NOT** overwrite `annoq-api/data/anno_tree.json` with the `--anno_tree`
@@ -290,7 +295,8 @@ bash scripts/run_jobs.sh --work_name <WORK_NAME> --base_dir <BASE_DIR> --es_inde
     `module load python && python3 -m venv venv && . venv/bin/activate && pip3 install -r requirements.txt`.
   - Needs `data/doc_type.pkl` present (see the version-control gotcha below).
 - Only the JSON is produced here. Loading into ES + the site/api-v2 do **not** run on this box — the
-  one annoq-site artifact this stage depends on is `metadata/annotation_tree.csv` (source of the
-  `annoq_mappings.json` / `doc_type.pkl`). **That file still lives in `annoq-site`**, even though
-  annoq.org is now served by `annoq-site-v2` — annoq-site-v2 has no `metadata/` tree source.
+  one site artifact this stage depends on is `metadata/annotation_tree.csv` (source of the
+  `annoq_mappings.json` / `doc_type.pkl`). Until the switchover it exists in **both site repos** —
+  `annoq-site/metadata/annotation_tree.csv` (**still authoritative**, so pass that one to the
+  generators) and the `annoq-site-v2/metadata/annotation_tree.csv` replica.
   Copy the JSON to the index host, then run steps 2–5 there.

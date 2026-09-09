@@ -32,9 +32,20 @@ the change is inherently cross-repo.
 | `anno_tree.json` / `api_mapping_anno_tree.json` | data-builder | api-v2 | The annotation category tree exposed to clients |
 | Elasticsearch index schema | database | api-v2 | The actual queryable fields; api-v2 generates GraphQL types from this |
 | GraphQL schema | api-v2 | site (both stage-4 repos) | The typed query surface the web UI calls |
+| `panther_terms.json` | data-builder (Java `add_panther_enhancer`) | both stage-4 site repos | PANTHER term-id → label lookup the UI renders |
+| `annotation_tree.csv` | **hand-maintained** in both site repos | data-builder | The source `annoq_mappings.json`, `doc_type.pkl` and the two `anno_tree` JSONs are generated from |
 
 **Rule of thumb:** a new or renamed annotation field touches *all four* stages — build it
 (1), index it (2), expose it in GraphQL (3), display/filter it in the UI (4).
+
+- **`search_hrc`** — an optional api-v2 argument (GraphQL and REST) that restricts results to the
+  HRC r1.1 mapped subset and interprets/returns hg19 coordinates. Spelled verbatim, never
+  camelCased: api-v2 runs Strawberry with `auto_camel_case=False`. Because it is part of the API's
+  public surface, it is subject to the consumer fan-out above.
+
+Nothing here is shared over a filesystem — each artifact is **generated in stage 1 and copied by
+hand** into the consuming repo. For the exact producer, output location and destination path of
+every one, see [pipeline.md → Generated artifacts](pipeline.md#generated-artifacts--what-produces-them-and-where-each-one-must-be-copied).
 
 ## Stage 1 — annoq-data-builder
 
@@ -108,13 +119,44 @@ api-v2; annoq-api is retained only for legacy context.
 |----------|------|-------|
 | annoq-site-v2 | Web UI (React + TypeScript) | **Stage 4, HRC:** production at annoq.org (HRC r1.1); SNP-only |
 | annoq-site | Web UI (Angular 9) | **Stage 4, TOPMed:** beta at topmed.annoq.org (TOPMed Freeze 8); SNP-only; superseded on HRC |
-| annoq-py | Python client library | Wraps API + SNPWay workflows; 10k pagination / 20-field limits |
-| AnnoQR | R client package | Wraps API + SNPWay workflows; default base URL `enrichment-dev.annoq.org` |
+| annoq-py | Python client library | Wraps API + SNPWay workflows; 10k pagination / 20-field limits; base URL overridable via `ANNOQ_BASE_URL` |
+| AnnoQR | R client package | Wraps API + SNPWay workflows; default base URL `api-v2.annoq.org`, overridable via `ANNOQR_BASE_URL` / `annoq_api_url()` |
 | Annoq_Overrepr_Workflow (SNPWay) | Web app + FastAPI | SNP→gene mapping + PANTHER overrepresentation; live at snpway.annoq.org |
 
 Because these consumers depend on the API's schema and limits, **api-v2 is a shared contract
 too**: changing field names, the annotation tree, or pagination/field limits can break clients
 and SNPWay in addition to the site. See [repositories.md](repositories.md) for each consumer.
+
+### Propagating an api-v2 contract change
+
+api-v2 is a **fan-out point**: a new argument, a renamed field, or a changed limit is not done when
+the API ships it. Every consumer that should expose it needs its own change, in its own repo, on its
+own branch. Work through this list explicitly and record what was skipped and why.
+
+| Consumer | Repo | Who changes it |
+|----------|------|----------------|
+| Web UI (HRC) | annoq-site-v2 | site branch |
+| Web UI (TOPMed) | annoq-site | site branch |
+| Python client | annoq-py | library branch off `main` |
+| R client | AnnoQR | library branch off `main` |
+| SNPWay | Annoq_Overrepr_Workflow | its own issue |
+
+**Worked example — `search_hrc` (annoq-site#78).** Restricts a query to the HRC r1.1 mapped subset
+(`Mapped_in_HRC=Y`) and flips the coordinate basis to hg19. Accepted by the chromosome / RsID /
+RsIDs / IDs / gene_product families and `gene_info`; rejected by the `*_by_keyword` family and by
+`annotations` / `/snpAttributes`.
+
+| Consumer | Status |
+|----------|--------|
+| annoq-site | shipped (`issue-78-add-hrc-mapping-info`) |
+| annoq-site-v2 | shipped (`annoq-site-78-add-hrc-mapping-info`) |
+| annoq-py | shipped (`annoq-site-78-add-hrc-mapping-info`, off `main`) |
+| AnnoQR | shipped (`annoq-site-78-add-hrc-mapping-info`, off `main`) |
+| SNPWay | **pending** — [Annoq_Overrepr_Workflow#9](https://github.com/USCbiostats/Annoq_Overrepr_Workflow/issues/9) covers its front and back end |
+
+Note the client libraries branch off **`main`**, not off the `annoq-site-19-update-for-topmed`
+line: those branches were last touched 2026-03-02 and predate the SNPWay workflow functions added
+to `main` on 2026-04-27, so building on them would ship libraries missing a quarter of their API.
 
 ## Parallel deployment stacks (HRC & TOPMed)
 
@@ -205,6 +247,8 @@ pipeline code (data-builder/database can process SNVs and indels).
 | Indexing is slow / fails / mapping mismatch | 2 (database) |
 | New annotation source to add | 1 → 2 → 3 → 4 (all stages) |
 | Change to search/filter behavior | 3 (resolvers) and/or 4 (UI) |
+| New API argument / field / limit that users should be able to use | 3 (api-v2) **then every consumer** — see [Propagating an api-v2 contract change](#propagating-an-api-v2-contract-change) |
+| Feature works in the web UI but not from R/Python | consumer propagation was skipped — check the fan-out table |
 
 See [pipeline.md](pipeline.md) for the end-to-end runbook and [repositories.md](repositories.md)
 for per-repo detail.

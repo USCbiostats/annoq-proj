@@ -207,5 +207,7 @@ annoq-proj/
 
 - [Architecture](docs/architecture.md) — how the stages connect, the shared contracts, and the API consumers.
 - [Repositories](docs/repositories.md) — per-repo purpose, structure, inputs/outputs, and gotchas.
-- [Pipeline runbook](docs/pipeline.md) — end-to-end flow from raw VCF to live UI and clients.
+- [Pipeline runbook](docs/pipeline.md) — end-to-end flow from raw VCF to live UI and clients,
+  including the **generated-artifact map**: what stage 1 produces, where it lands, and which path
+  each file must be copied to.
 - [Glossary](docs/glossary.md) — VCF, WGSA, PANTHER, SNV, SNPWay, RSID, Strawberry, and other terms.

@@ -31,6 +31,59 @@ change at a given stage.
  value visible / queryable at annoq.org (HRC) / topmed.annoq.org (TOPMed)
 ```
 
+## Generated artifacts — what produces them, and where each one must be copied
+
+The stages share **no filesystem**. Stage 1 writes files and you **copy them by hand** into the
+repos that consume them; a missed copy is silent — the stages simply disagree. Exact commands:
+[`/annoq-data-build`](../.claude/skills/annoq-data-build/SKILL.md).
+
+### Step numbering differs between docs — map it first
+
+The same work carries different "Part" numbers in each document. Match by **name**, not number:
+
+| Work | data-builder README (`issue-78` line) | data-builder README (`master`) | `/annoq-data-build` skill |
+|------|---------------------------------------|--------------------------------|---------------------------|
+| WGSA annotate (ANNOVAR/VEP/SnpEff) | Part 1 | Part 1 | prerequisite, not covered |
+| HRC mapping columns (**TOPMed only**) | Part 2 | — | Part 2.1 |
+| PANTHER / GO / Reactome / Enhancer (Java module) | Part 3 | Part 2 | Part 2 |
+| Generate + distribute tree / mappings / pickle | Part 4 (+ 4.1) | Part 3 (+ 3.1) | Part 3 |
+
+**Ordering invariant:** the HRC merge runs **after** WGSA and **before** the Java
+PANTHER/enhancer step (which also does the dbNSFP `.` → `""` cleanup), and both run before
+VCF→JSON conversion in stage 2.
+
+### The artifacts
+
+| Artifact | Produced by | Written to | Copy to |
+|----------|-------------|------------|---------|
+| `panther_annot.json` | `tools/api_extractor/panther_gene_extractor.py -o` (PANTHER/enhancer step, first) | the path you pass to `-o` | the path in `file.panther.annot` of `java_wgsa_add/add_panther_enhancer/src/main/resources/add_panther_enhancer.properties` — **input** to the Java module, not shipped anywhere |
+| **`panther_terms.json`** | the Java module `add_panther_enhancer` — `ProcessVCFParallel <inputDir> <outputDir> <workingDir>` | `<workingDir>` (the "diagnostics" dir) | **both site repos** — `annoq-site-v2/src/data/panther_terms.json` (HRC, annoq.org) **and**, until the TOPMed cutover, `annoq-site/src/@annoq.common/data/panther_terms.json` (topmed.annoq.org) |
+| annotated VCFs | the same Java module run | `<outputDir>` | nowhere — read in place by stage 2 (VCF→JSON) |
+| `merge_hrc_topmed_stats.json` | `wgsa_add/merge_hrc_topmed.py` (HRC-mapping step, TOPMed only) | `<output_dir>` | nowhere — mapping counts only |
+| `anno_tree.json` | `python3 -m tools.annotation_tree_gen --output_json` | the path you pass | `annoq-api-v2/data/anno_tree.json` |
+| `api_mapping_anno_tree.json` | `tools.annotation_tree_gen --api_mappings_json` | the path you pass | `annoq-api-v2/data/api_mapping_anno_tree.json` |
+| `annoq_mappings.json` | `tools.annotation_tree_gen --mappings_json` | the path you pass | `annoq-database/data/annoq_mappings.json` |
+| `doc_type.pkl` | `tools/mappings_data_type_gen.py -o/--output` | the path you pass | `annoq-database/data/doc_type.pkl` |
+
+### The one input nothing generates
+
+`annotation_tree.csv` is **hand-maintained** — both generators read it (`--input_csv` /
+`--input`). Until the switchover it exists in **both site repos**:
+`annoq-site/metadata/annotation_tree.csv` (**authoritative — pass this one to the generators**)
+and the `annoq-site-v2/metadata/annotation_tree.csv` replica. Edit both, keep them identical.
+
+### Two outputs are throwaway — never copy them back
+
+- `annotation_tree_gen --output_csv` (`annotation_tree_output.csv`) — **never** overwrite
+  `annotation_tree.csv` with it; fields get lost. Hence the documented `/do/not/use/` path.
+- `mappings_data_type_gen.py --anno_tree` (`do_not_use_anno_tree.json`) — **never** overwrite
+  `anno_tree.json` with it; that script does not generate every field. Only
+  `annotation_tree_gen --output_json` produces the real `anno_tree.json`.
+
+Copying is not the end: the consuming stages still have to re-run — re-create and reload the index
+(2) with the new `annoq_mappings.json` + `doc_type.pkl`, regenerate GraphQL types (3), then codegen
+and build **each** site (4). See the re-run matrix next.
+
 ## Re-run matrix: "I changed stage N, what must re-run?"
 
 | Changed | Must also re-run / regenerate |

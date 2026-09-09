@@ -253,7 +253,10 @@ chromosome ranges, RSID lists, gene identifiers) with configurable field selecti
 **Data source:** api-v2 — annoq-py retrieves its SNP/annotation data from **annoq-api-v2**.
 
 **Gotchas:** respects API limits — **10,000-result pagination cap** for standard queries and a
-**20-field maximum per request**. Behavior tracks the API contract; changes to api-v2's schema or
+**20-field maximum per request**. The base URL defaults to `https://api-v2.annoq.org` and is
+overridable with the `ANNOQ_BASE_URL` environment variable. Supports api-v2's `search_hrc` on its
+six search/count functions; **not** on `get_snp_attributes` (the endpoint rejects it) nor on the
+SNPWay wrappers, which call snpway.annoq.org rather than api-v2. Behavior tracks the API contract; changes to api-v2's schema or
 limits can affect this client.
 
 ---
@@ -277,8 +280,11 @@ annotations, enrichment analysis, and CSV-ready exports.
 
 **Data source:** api-v2 — like annoq-py, AnnoQR retrieves its SNP/annotation data from
 **annoq-api-v2**. The base URL is configurable (per call or via environment variables); it
-defaults to `https://enrichment-dev.annoq.org` (a dev api-v2 deployment), so **verify it points
-at the intended api-v2 instance** (dev vs prod `api-v2.annoq.org`) before running.
+defaults to `https://api-v2.annoq.org`, overridable with the `ANNOQR_BASE_URL` environment
+variable or per-session with `annoq_api_url()`, so **verify it points at the intended api-v2
+instance** before running. Supports api-v2's `search_hrc` on its six search/count functions;
+**not** on `snpAttributesQuery` nor on the SNPWay wrappers, which call snpway.annoq.org rather
+than api-v2.
 
 ---
 
@@ -313,6 +319,9 @@ interfaces, defaulting to the **HRC / production** instance:
 - `ANNOTATION_DOWNLOAD_V2=https://api-v2.annoq.org/download`
 
 **Gotchas:** depends on **api-v2** — API schema/limit changes can break it, and it uses the
-`/download` endpoint (not just `/graphql`). The endpoints are env-configurable, so point it at
+`/download` endpoint (not just `/graphql`). Does not yet support api-v2's `search_hrc` (the HRC
+r1.1 subset filter) — tracked in
+[issue #9](https://github.com/USCbiostats/Annoq_Overrepr_Workflow/issues/9), which covers both its
+frontend and backend. The endpoints are env-configurable, so point it at
 the intended stack. The same SNPWay workflow is also exposed programmatically through annoq-py
 and AnnoQR. Local dev runs the backend with `uvicorn main:app --port 8002 --reload`.
