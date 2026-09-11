@@ -77,7 +77,9 @@ Converts and indexes.
 
 The query layer. FastAPI + Strawberry GraphQL. Its defining trick: it **dynamically
 generates 500+ GraphQL types** from the ES schema mappings (via `datamodel-codegen` and
-`scripts/class_generators/`) instead of hand-writing them. Runs under Docker Compose.
+`scripts/class_generators/`) instead of hand-writing them. Run locally with
+`uvicorn src.main:app` from the repo root; its Elasticsearch comes from **annoq-database**'s
+compose stack (api-v2 has no compose file of its own).
 
 **Output:** the public GraphQL endpoint (`https://api-v2.annoq.org/docs`).
 

@@ -125,7 +125,7 @@ Start where the symptom appears and walk upstream until the value is correct:
 
 | Stage | Bring-up |
 |-------|----------|
-| api-v2 (3) | `docker-compose up` with sample data from annoq-database; open `/docs` and the GraphQL playground |
+| api-v2 (3) | Bring ES up in **annoq-database** (`docker-compose up -d`), then `uvicorn src.main:app --reload --port 8001` **from the api-v2 repo root**; open `/docs` and the GraphQL playground |
 | site — HRC (4) | **annoq-site-v2:** `npm install` → `npm run graphql_codegen` → `npm run dev` → `localhost:5173` (Node 20+); endpoint via `src/lib/environment.ts` or `VITE_ANNOQ_API_V2` |
 | site — TOPMed (4) | **annoq-site:** `npm install` → `ng serve` → `localhost:4205`; point env at local or prod api-v2 |
 | database (2) | Requires a reachable Elasticsearch; run `scripts/run_es_job.sh` against sample JSON |
@@ -143,7 +143,7 @@ database/ES instance (see [architecture.md](architecture.md#parallel-deployment-
 
 Plus:
 - **SNPWay:** <https://snpway.annoq.org>
-- **Local API:** Docker Compose (see annoq-api-v2)
+- **Local API:** `uvicorn src.main:app --port 8001` from the annoq-api-v2 root (no compose file there)
 - **Local UI:** `localhost:5173` (annoq-site-v2, `npm run dev`) · `localhost:4205` (annoq-site, `ng serve`)
 
 > Both stacks currently serve **SNPs only (no indels)**. When debugging, first note **which

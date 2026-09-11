@@ -103,7 +103,9 @@ Domain and technical terms used across the AnnoQ pipeline.
   (built with Vite, tested with Vitest, Node 20+); also used by the SNPWay frontend.
 - **Vite** — the build/dev tooling for annoq-site-v2 (`npm run dev` on port 5173); dataset and API
   endpoint come from `src/lib/environment.ts`, overridable via `VITE_ANNOQ_API_V2`.
-- **Docker / Docker Compose** — containerization for api-v2 local/prod deployment.
+- **Docker / Docker Compose** — containerization. **All database containers (Elasticsearch,
+  Kibana) belong to annoq-database's compose stack**; api-v2 ships a `Dockerfile` but no compose
+  file and is run locally with `uvicorn`.
 
 ## Repositories & shorthand
 

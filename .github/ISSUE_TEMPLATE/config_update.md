@@ -14,7 +14,7 @@ labels: configuration
 ## Config surface
 - [ ] Stage 1 — annoq-data-builder (SLURM `sbatch`, `config.py`, resource paths, PANTHER API)
 - [ ] Stage 2 — annoq-database (ES connection, index name/settings, `annoq_mappings.json`, loading strategy)
-- [ ] Stage 3 — annoq-api-v2 (`docker-compose.yaml`, env, `anno_tree.json`, deps)
+- [ ] Stage 3 — annoq-api-v2 (`.env`, `anno_tree.json`, deps — no compose file here)
 - [ ] Stage 4 — annoq-site-v2 (`src/lib/environment.ts` dataset + api-v2 URL, `VITE_ANNOQ_API_V2`, codegen target) — **annoq.org / HRC**
 - [ ] Stage 4 — annoq-site (environment files / target api-v2 URL, build config, codegen target) — **topmed.annoq.org / TOPMed**
 - [ ] Consumer — annoq-py / AnnoQR (API base URL, request settings)

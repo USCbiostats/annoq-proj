@@ -76,7 +76,7 @@ and what api-v2 expects.
 This is the **current API** and the one all clients should target; it replaced the original
 [annoq-api](#annoq-api-deprecated) (Flask/REST).
 
-**Stack:** Python 3.11+, FastAPI, Strawberry GraphQL, Docker / Docker Compose.
+**Stack:** Python 3.11+, FastAPI, Strawberry GraphQL, Docker (image only — no compose file).
 
 **Structure (key paths):**
 - `src/` — application source (schema, resolvers, ES client)
@@ -84,7 +84,8 @@ This is the **current API** and the one all clients should target; it replaced t
 - `data/` — `anno_tree.json`, `api_mapping_anno_tree.json`
 - `sample_data/` — sample datasets for local setup
 - `test/` — pytest suite
-- `docker-compose.yaml`, `requirements.txt`, `playground.ipynb`
+- `Dockerfile`, `requirements.txt`, `playground.ipynb` — **no compose file**: the local
+  Elasticsearch/Kibana containers are owned by [annoq-database](#2-annoq-database)
 
 **Inputs:** Elasticsearch indices; annotation-tree config.
 **Outputs:** GraphQL endpoint. Runs as **two instances**, one per stack:

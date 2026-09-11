@@ -17,7 +17,7 @@ This playbook locates the config surface, applies the change safely, and validat
 |------:|------|---------------|
 | 1 build | annoq-data-builder | SLURM batch settings (`wgsa_095_pipeline/work_scripts/`: `sbatch.py`, `sbatch.temp`, `config.py`), resource paths, PANTHER API params |
 | 2 index | annoq-database | ES connection/creds, index name & settings, `annoq_mappings.json`, `doc_type.pkl`, loading strategy, Kibana/Logstash config |
-| 3 API | **annoq-api-v2** (current) | `docker-compose.yaml`, env (ES host/index), `data/anno_tree.json` / `api_mapping_anno_tree.json`, `requirements.txt` |
+| 3 API | **annoq-api-v2** (current) | `.env` (ES host/index), `data/anno_tree.json` / `api_mapping_anno_tree.json`, `Dockerfile`, `requirements.txt` — **no compose file; ES containers live in annoq-database** |
 | 4 UI (HRC) | **annoq-site-v2** | `src/lib/environment.ts` (**`dataset` + `annotationApiV2`**), `VITE_ANNOQ_API_V2` override, Vite build config, codegen target |
 | 4 UI (TOPMed) | **annoq-site** | environment files (**target api-v2 URL**), build config, `graphql_codegen.ts` target, `metadata/` |
 
@@ -81,7 +81,7 @@ These affect more than one stage — changing them is effectively a cross-stage 
 | Change | Validation |
 |--------|------------|
 | ES mapping/index settings | Re-create index + re-index sample; confirm docs load and fields query (Kibana/`_search`) |
-| Docker Compose / api-v2 env | `docker-compose up`; hit `/docs` and run a sample GraphQL query |
+| api-v2 `.env` (ES host/index) | ES up via **annoq-database** `docker-compose up -d`, then `uvicorn src.main:app --port 8001` from the api-v2 root; hit `/docs` and run a sample GraphQL query |
 | SLURM/`sbatch` settings | Dry-run or a small test job; confirm resource requests are valid |
 | Site env / endpoint URL (HRC) | **annoq-site-v2:** `npm run graphql_codegen` → `npm run dev` (5173); confirm it hits the intended api-v2 and data loads |
 | Site env / endpoint URL (TOPMed) | **annoq-site:** `ng serve` (4205); confirm the app hits the intended api-v2 and data loads |
